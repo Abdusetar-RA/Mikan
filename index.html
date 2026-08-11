@@ -23,6 +23,7 @@
     --rose:#E8879C;
     --rose-2:#F2A6B8;
     --sage:#8FBC94;
+    --sky:#7EC8E3;
     --line:rgba(245,240,232,0.10);
     --line-2:rgba(245,240,232,0.16);
     --glass-bg:linear-gradient(155deg, rgba(58,52,94,0.45), rgba(28,26,48,0.45));
@@ -91,14 +92,11 @@
   .profile-row{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--cream-dim); margin-top:5px; justify-content:center;}
   .profile-visuals{display:flex; justify-content:center; gap:16px; margin:2px 0 8px;}
   .mini-orb-wrap{ position:relative; width:58px; height:58px; }
-  .clock-face-wrap-sm{ position:relative; width:58px; height:58px; }
-  .clock-face-wrap-sm .weather-badge{ right:-6px; bottom:-4px; padding:1px 5px; font-size:9.5px; position:absolute; background:var(--ink-2); border:1px solid var(--glass-border); border-radius:999px; font-weight:600; box-shadow:0 4px 10px rgba(0,0,0,0.4); }
   .profile-visual-label{ font-size:10.5px; color:var(--cream-dim); text-align:center; white-space:nowrap; }
   .profile-meta{ text-align:center; font-size:11.5px; color:var(--cream-dim); margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px; flex-wrap:wrap; }
   .aura-tag-inline{ color:var(--cream); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; font-size:11px; }
   .profile-actions{display:flex; gap:6px; margin-top:10px;}
   .profile-actions > button{flex:1; font-size:11px; padding:7px 6px; white-space:normal; line-height:1.25; background:rgba(245,240,232,0.08); border:1px solid var(--line-2); color:var(--cream); border-radius:10px; cursor:pointer;}
-  .activity-chip-btn.set{border-color:var(--gold); color:var(--gold);}
   .care-btn{ margin-top:8px; width:100%; border:none; border-radius:10px; padding:8px 10px; font-size:12px; cursor:pointer; font-weight:700; background:linear-gradient(120deg, var(--rose-2), var(--rose) 60%, #B968D6); color:#2A0E17; box-shadow:0 4px 14px rgba(232,135,156,0.35); }
   .status-divider{ width:26px; flex:none; display:flex; align-items:center; justify-content:center; position:relative; }
   .status-divider::before{ content:''; position:absolute; top:14%; bottom:14%; left:50%; width:1px; background:linear-gradient(180deg, transparent, var(--line-2) 25%, var(--gold) 50%, var(--line-2) 75%, transparent); opacity:0.55; }
@@ -137,7 +135,6 @@
   /* --- IG Style Floating Instant Camera Widget --- */
   .ig-floating-cam { position: fixed; right: -5px; bottom: 110px; width: 65px; height: 80px; background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.2); border-right: none; border-radius: 40px 0 0 40px; box-shadow: -6px 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:flex-start; padding-left: 8px; z-index: 90; cursor: pointer; transition: transform 0.2s var(--ease-pop), width 0.2s ease; overflow: hidden; backdrop-filter:var(--glass-blur); }
   .ig-floating-cam:hover { transform: translateX(-5px); width: 75px; }
-  .ig-floating-cam:active { transform: scale(0.95); }
   .ig-cam-icon-bg { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--rose), var(--gold)); display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 10px rgba(227,168,87,0.4); padding: 2px; }
   .ig-cam-icon-inner { width: 100%; height: 100%; background: var(--ink); border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 18px; }
   .ig-cam-dot { position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 8px var(--rose); animation: pulse 1.5s infinite; }
@@ -315,7 +312,7 @@ try{
   function energyTierColors(score){ const t = energyTier(score); if(t==='low') return {a:'#4B5385', b:'#232249', accent:'#8890C7'}; if(t==='balanced') return {a:'#E3A857', b:'#5A4A8A', accent:'#F0C382'}; return {a:'#E8879C', b:'#9763D6', accent:'#F2A6B8'}; }
 
   const QUIZ_QUESTIONS = [
-    "What's my go-to comfort food?", "What's my favorite memory of us?", "What's the first thing I do when I wake up?",
+    "What's my go-to comfort food?", "What's my favorite surah to listen to?", "What's the first thing I do when I wake up?",
     "What's a small thing that instantly annoys me?", "What's my dream trip destination?", "What's my biggest pet peeve about texting?"
   ];
 
@@ -358,13 +355,16 @@ try{
     "Record yourself explaining why you love me using only your hands, no talking.", "Do 10 push-ups on camera right now and send proof."
   ];
 
+  const DRAW_COLORS = ['#20160A','#E3A857','#E8879C','#8FBC94','#7EC8E3','#F5F0E8'];
+  let activeDeckId = null, deckFlipped = false;
+
   const state = {
     identity: null, couple: null, tab: 'today', activeFeature: null,
     routinesShared: [], routinesPersonal: {A:[], B:[]}, logToday: {A:{}, B:{}}, streaks: {A:0, B:0},
     bucketList: [], feed: [], profile: {A:null, B:null}, weather: {A:null, B:null},
     deckCurrent: {}, deckAnswers: {}, tod: null, games: {ttt:null, c4:null}, canvas: null, quizToday: null, quizScores: {A:0, B:0},
     giftboxes: [], jarNotes: [], scratchToday: {A:null, B:null}, letters: [], capsules: [],
-    energyToday: {A:[], B:[]}, lastSeenHeartbeatTs: 0, customDecks: [], customTod: {truths:[], dares:[]},
+    energyToday: {A:[], B:[]}, lastSeenHeartbeatTs: 0, customDecks: [], customTod: {truths:[], dares:[]}, qotd: null,
     instantIncoming: null, instantSent: null
   };
 
@@ -389,29 +389,31 @@ try{
   }
 
   async function boot(){
-    if(localStorage.getItem('orbit:authed') !== 'true'){ renderLogin(); return; }
-    state.identity = getJSON(await sGet('identity', false), null);
-    state.couple = getJSON(await sGet('couple-config', true), null);
-    if(!state.identity || !state.couple){ renderOnboarding(); return; }
-    state.lastSeenHeartbeatTs = parseInt(getJSON(await sGet('heartbeat-seen:'+myRole(), true), '0'), 10) || 0;
-    await loadAll();
-    renderApp();
-    reportPresence();
+    try {
+      if(localStorage.getItem('orbit:authed') !== 'true'){ renderLogin(); return; }
+      state.identity = getJSON(await sGet('identity', false), null);
+      state.couple = getJSON(await sGet('couple-config', true), null);
+      if(!state.identity || !state.couple){ renderOnboarding(); return; }
+      state.lastSeenHeartbeatTs = parseInt(getJSON(await sGet('heartbeat-seen:'+myRole(), true), '0'), 10) || 0;
+      await loadAll();
+      renderApp();
+      reportPresence();
+    } catch(err) {
+      console.error("Boot error: ", err);
+      renderLogin();
+    }
   }
 
   async function loadAll(){
     state.routinesShared = getJSON(await sGet('routines-shared', true), [{id:'quran', label:'Read Quran'}]);
     
-    // Personalized defaults for their personal lists based on context
     const defaultPersonal = {
       A: [{id:uid(), label:'Study Economics'}, {id:uid(), label:'Reach 2500 rapid rating in chess (10 hours/week) ♟️'}],
       B: []
     };
     state.routinesPersonal = getJSON(await sGet('routines-personal', true), defaultPersonal);
-    
     state.logToday = getJSON(await sGet('routine-log:'+today(), true), {A:{}, B:{}});
     
-    // Personalized bucket list based on context
     state.bucketList = getJSON(await sGet('bucket-list', true), [
       {id:uid(), text:'Travel between UAE and Ethiopia together ✈️', done:false},
       {id:uid(), text:'Adopt another kitten 🐾', done:false},
@@ -456,9 +458,9 @@ try{
     }
   }
 
-  function myRole(){ return state.identity.role; }
-  function otherRole(){ return state.identity.role==='A' ? 'B':'A'; }
-  function nameFor(role){ return role==='A' ? state.couple.nameA : state.couple.nameB; }
+  function myRole(){ return state.identity ? state.identity.role : 'A'; }
+  function otherRole(){ return myRole()==='A' ? 'B':'A'; }
+  function nameFor(role){ return role==='A' ? (state.couple?.nameA||'Abdusetar') : (state.couple?.nameB||'Ilham'); }
 
   function renderOnboarding(){
     if(!state.couple){
@@ -588,8 +590,6 @@ try{
     const mapEl = document.getElementById('live-map');
     if(!mapEl || !window.L) return;
     const pA = state.profile.A, pB = state.profile.B;
-    
-    // Default to Addis Ababa if no coords exist anywhere
     let lat = 9.0192, lon = 38.7525, zoom = 2; 
 
     if (pA?.lat && pB?.lat) { lat = (pA.lat + pB.lat) / 2; lon = (pA.lon + pB.lon) / 2; zoom = 3; }

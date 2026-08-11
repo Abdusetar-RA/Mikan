@@ -1,1 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Orbit</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Leaflet CSS for Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<style>
+  :root{
+    --ink:#0B0A16;
+    --ink-2:#16152A;
+    --plum:#2C2848;
+    --plum-2:#37315A;
+    --cream:#F5F0E8;
+    --cream-dim:#B9B2C9;
+    --gold:#E3A857;
+    --gold-2:#F0C382;
+    --rose:#E8879C;
+    --rose-2:#F2A6B8;
+    --sage:#8FBC94;
+    --line:rgba(245,240,232,0.10);
+    --line-2:rgba(245,240,232,0.16);
+    --glass-bg:linear-gradient(155deg, rgba(58,52,94,0.45), rgba(28,26,48,0.45));
+    --glass-border:rgba(245,240,232,0.12);
+    --glass-shadow:0 10px 28px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 0 0 1px rgba(255,255,255,0.02);
+    --glass-blur:blur(20px) saturate(160%);
+    --ease-pop:cubic-bezier(.22,.9,.32,1.2);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0; background-color: var(--ink); overflow-x:hidden;}
+  body{
+    background:
+      radial-gradient(60% 45% at 12% 8%, rgba(232,135,156,0.12) 0%, transparent 60%),
+      radial-gradient(55% 40% at 88% 14%, rgba(227,168,87,0.10) 0%, transparent 60%),
+      radial-gradient(120% 100% at 50% -10%, #2A2650 0%, #121124 55%, #0B0A16 100%);
+    background-attachment:fixed; color:var(--cream);
+    font-family:'Plus Jakarta Sans', sans-serif; min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  
+  /* --- Twinkling Stars & Moon Background --- */
+  .stars-bg { position: fixed; inset: 0; pointer-events: none; z-index: -2; background-image: radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)), radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)), radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0)); background-repeat: repeat; background-size: 200px 200px; animation: twinkle 5s infinite alternate; opacity: 0.3; }
+  .moon-bg { position: fixed; top: 40px; right: 30px; width: 70px; height: 70px; background: radial-gradient(circle at 30% 30%, var(--cream) 0%, #d4c8b8 40%, transparent 70%); border-radius: 50%; box-shadow: 0 0 40px rgba(245,240,232,0.3); pointer-events: none; z-index: -1; opacity: 0.8; filter: blur(1px); }
+  @keyframes twinkle { 0% { opacity: 0.1; } 100% { opacity: 0.5; } }
 
+  .app{ max-width:480px; margin:0 auto; min-height:100vh; padding:env(safe-area-inset-top,0) 0 0; display:flex; flex-direction:column; position:relative; z-index: 1; }
+  h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; margin:0;}
+  p{margin:0;}
+
+  .btn, .nudge-btn, .icon-btn, .sync-fab, .activity-chip-btn, .chip-pick, .tab, .swatch, .check, .cheer-chip, .inline-del, .launcher-btn{ transition:transform .18s var(--ease-pop), box-shadow .22s ease, background .22s ease, border-color .22s ease, filter .22s ease; cursor:pointer;}
+  .btn:active, .activity-chip-btn:active, .launcher-btn:active{ transform:scale(0.95); }
+  .btn-primary{ background:linear-gradient(135deg, var(--gold-2), var(--gold) 55%, #D9954A); box-shadow:0 6px 20px rgba(227,168,87,0.35), 0 0 0 1px rgba(255,255,255,0.12) inset; color:#20160A; border-radius:14px; padding:14px 18px; font-weight:600; border:none;}
+  .btn-primary:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+  .btn-ghost{ background:rgba(245,240,232,0.04); backdrop-filter:blur(10px); color:var(--cream-dim); border:1px solid var(--line-2); border-radius:14px; padding:14px 18px; font-weight:600;}
+  .btn-block{width:100%;}
+
+  .onboard{ flex:1; display:flex; flex-direction:column; justify-content:center; padding:32px 28px; gap:22px; }
+  .onboard h1{font-size:34px; line-height:1.15; letter-spacing:-0.01em;}
+  .field label{display:block; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:var(--cream-dim); margin-bottom:7px;}
+  input[type=text], input[type=password], input[type=time], textarea, select{ width:100%; background:var(--plum); border:1px solid var(--line-2); color:var(--cream); border-radius:12px; padding:12px 14px; font-family:inherit; font-size:15px; outline:none; }
+  input[type=text]:focus, input[type=password]:focus, textarea:focus{border-color:var(--gold);}
+  .role-pick{display:flex; gap:10px; margin-top:6px;}
+  .role-pick button{ flex:1; background:var(--plum); border:1px solid var(--line-2); color:var(--cream); border-radius:14px; padding:16px 10px; font-family:'Fraunces',serif; font-size:17px; cursor:pointer; }
+
+  /* --- Top Bar & Layout --- */
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:16px 20px 4px;}
+  .brand{font-family:'Fraunces',serif; font-size:16px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold);}
+  .content{flex:1; padding:0 20px 120px; overflow-y:auto;}
+  .section-title{font-size:19px; margin-bottom:4px; margin-top:10px;}
+  .section-sub{color:var(--cream-dim); font-size:13px; margin-bottom:14px;}
+
+  /* --- Native App Bottom Navigation --- */
+  .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 480px; background: rgba(11, 10, 22, 0.85); backdrop-filter: blur(20px); border-top: 1px solid var(--glass-border); display: flex; justify-content: space-around; padding: 12px 10px calc(12px + env(safe-area-inset-bottom, 0)); z-index: 100; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #666; background: none; border: none; font-size: 11px; font-weight: 600; cursor: pointer; transition: color 0.2s ease; }
+  .nav-item.active { color: var(--gold); }
+  .nav-icon { font-size: 24px; margin-bottom: 2px; transition: transform 0.2s cubic-bezier(.22,.9,.32,1.2); }
+  .nav-item.active .nav-icon { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(227,168,87,0.5)); }
+
+  /* --- Dashboard Profile Cards & Visuals --- */
+  .profile-bar{display:flex; align-items:stretch; gap:0; margin:14px 0 24px;}
+  .profile-card{ flex:1; position:relative; border-radius:22px; padding:16px; min-width:0; overflow:hidden; border:1px solid var(--glass-border); box-shadow:var(--glass-shadow); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); transition:background 1s ease, box-shadow .6s ease; }
+  .profile-card.tier-low{ background:linear-gradient(155deg, rgba(58,64,110,0.4), rgba(30,30,54,0.6)); }
+  .profile-card.tier-balanced{ background:linear-gradient(155deg, rgba(227,168,87,0.15), rgba(55,49,90,0.4)); }
+  .profile-card.tier-radiant{ background:linear-gradient(155deg, rgba(232,135,156,0.2), rgba(151,99,214,0.2)); box-shadow:0 10px 30px rgba(232,135,156,0.15), var(--glass-shadow); }
+  .profile-card.tier-none{ background:var(--glass-bg); }
+  .profile-name{font-weight:600; font-size:13px; display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .profile-row{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--cream-dim); margin-top:5px; justify-content:center;}
+  .profile-visuals{display:flex; justify-content:center; gap:16px; margin:2px 0 8px;}
+  .mini-orb-wrap{ position:relative; width:58px; height:58px; }
+  .clock-face-wrap-sm{ position:relative; width:58px; height:58px; }
+  .clock-face-wrap-sm .weather-badge{ right:-6px; bottom:-4px; padding:1px 5px; font-size:9.5px; position:absolute; background:var(--ink-2); border:1px solid var(--glass-border); border-radius:999px; font-weight:600; box-shadow:0 4px 10px rgba(0,0,0,0.4); }
+  .profile-visual-label{ font-size:10.5px; color:var(--cream-dim); text-align:center; white-space:nowrap; }
+  .profile-meta{ text-align:center; font-size:11.5px; color:var(--cream-dim); margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px; flex-wrap:wrap; }
+  .aura-tag-inline{ color:var(--cream); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; font-size:11px; }
+  .profile-actions{display:flex; gap:6px; margin-top:10px;}
+  .profile-actions > button{flex:1; font-size:11px; padding:7px 6px; white-space:normal; line-height:1.25; background:rgba(245,240,232,0.08); border:1px solid var(--line-2); color:var(--cream); border-radius:10px; cursor:pointer;}
+  .activity-chip-btn.set{border-color:var(--gold); color:var(--gold);}
+  .care-btn{ margin-top:8px; width:100%; border:none; border-radius:10px; padding:8px 10px; font-size:12px; cursor:pointer; font-weight:700; background:linear-gradient(120deg, var(--rose-2), var(--rose) 60%, #B968D6); color:#2A0E17; box-shadow:0 4px 14px rgba(232,135,156,0.35); }
+  .status-divider{ width:26px; flex:none; display:flex; align-items:center; justify-content:center; position:relative; }
+  .status-divider::before{ content:''; position:absolute; top:14%; bottom:14%; left:50%; width:1px; background:linear-gradient(180deg, transparent, var(--line-2) 25%, var(--gold) 50%, var(--line-2) 75%, transparent); opacity:0.55; }
+  .status-divider-pulse{ width:7px; height:7px; border-radius:50%; background:var(--gold); position:relative; z-index:1; animation:pulse 2.6s ease-out infinite; }
+
+  /* --- Zenly Map UI --- */
+  .map-card{ background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:20px; padding:4px; margin-bottom:24px; overflow:hidden; box-shadow:var(--glass-shadow); position:relative; }
+  #live-map{ width:100%; height:180px; border-radius:16px; background:#111; z-index:1; }
+  .map-distance-badge{ position:absolute; top:12px; left:50%; transform:translateX(-50%); background:rgba(10,9,20,0.7); backdrop-filter:blur(10px); border:1px solid var(--line-2); color:var(--gold); font-size:12px; font-weight:700; padding:6px 14px; border-radius:99px; z-index:400; box-shadow:0 4px 12px rgba(0,0,0,0.5); letter-spacing:0.04em; }
+
+  /* --- Rings --- */
+  .rings-row{display:flex; gap:14px; margin-bottom:24px;}
+  .ring-card{ flex:1; background:var(--glass-bg); border:1px solid var(--glass-border); box-shadow:var(--glass-shadow); backdrop-filter:var(--glass-blur); border-radius:18px; padding:16px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .ring-card .who{font-size:12.5px; font-weight:600; color:var(--cream-dim); margin-bottom:2px;}
+  .ring-visual{ position:relative; width:76px; height:76px; }
+  .ring-pct{font-family:'Fraunces',serif; font-size:20px; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); margin:0; line-height:1;}
+  .streak-badge{font-size:11px; color:var(--gold); display:flex; align-items:center; gap:4px;}
+
+  /* --- Editable To-Do Lists --- */
+  .routine-item{ display:flex; align-items:center; gap:10px; background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:12px 14px; margin-bottom:10px; box-shadow:var(--glass-shadow); }
+  .routine-mid{flex:1; min-width:0;}
+  .routine-label{font-weight:600; font-size:14.5px;}
+  .routine-time{font-size:12px; color:var(--cream-dim);}
+  .check{ width:30px; height:30px; border-radius:9px; border:1.5px solid var(--line-2); flex:none; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; color:transparent; }
+  .check.mine.done{background:var(--sage); border-color:var(--sage); color:#123018;}
+  .check.theirs.done{background:transparent; border-color:var(--rose); color:var(--rose); cursor:default;}
+  .inline-del{ background:rgba(245,240,232,0.05); border:1px solid var(--line-2); border-radius:8px; color:var(--cream-dim); font-size:14px; padding:4px 8px; cursor:pointer; }
+  .inline-add{ display:flex; gap:8px; margin-top:4px; margin-bottom:24px; }
+  .inline-add input{ padding:10px 14px; font-size:14px; border-radius:12px; flex:1; background:var(--glass-bg); border:1px solid var(--glass-border); color:var(--cream); }
+
+  /* --- EXPLORE TAB: The App Grid --- */
+  .launcher-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding-top: 10px; margin-bottom: 30px; }
+  .launcher-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--cream); font-size: 11.5px; font-weight: 600; box-shadow: var(--glass-shadow); backdrop-filter: var(--glass-blur); }
+  .launcher-emo { font-size: 38px; margin-bottom: 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+
+  /* --- IG Style Floating Instant Camera Widget --- */
+  .ig-floating-cam { position: fixed; right: -5px; bottom: 110px; width: 65px; height: 80px; background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.2); border-right: none; border-radius: 40px 0 0 40px; box-shadow: -6px 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:flex-start; padding-left: 8px; z-index: 90; cursor: pointer; transition: transform 0.2s var(--ease-pop), width 0.2s ease; overflow: hidden; backdrop-filter:var(--glass-blur); }
+  .ig-floating-cam:hover { transform: translateX(-5px); width: 75px; }
+  .ig-floating-cam:active { transform: scale(0.95); }
+  .ig-cam-icon-bg { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--rose), var(--gold)); display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 10px rgba(227,168,87,0.4); padding: 2px; }
+  .ig-cam-icon-inner { width: 100%; height: 100%; background: var(--ink); border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 18px; }
+  .ig-cam-dot { position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 8px var(--rose); animation: pulse 1.5s infinite; }
+
+  .ig-cam-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:600; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:auto; animation:fadeIn .2s ease; }
+  .ig-cam-square{ width:90%; max-width:400px; aspect-ratio:1; background:#111; border-radius:24px; overflow:hidden; position:relative; box-shadow:0 20px 50px rgba(0,0,0,0.6); }
+  .ig-cam-img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .ig-cam-controls{ display:flex; gap:12px; width:90%; max-width:400px; margin-top:24px; }
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+  /* --- General Subcomponents --- */
+  .deck-grid{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:6px;}
+  .deck-card{ width:calc(50% - 5px); position:relative; cursor:pointer; padding:0 7px 7px 0; min-height:116px; }
+  .deck-stack-layer{ position:absolute; inset:0; border-radius:16px; background:var(--glass-bg); border:1px solid var(--glass-border); }
+  .deck-stack-top{ position:relative; z-index:3; height:100%; background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:16px 14px; }
+  .deck-emo{font-size:26px; margin-bottom:8px;}
+  .deck-name{font-weight:600; font-size:13.5px; margin-bottom:10px;}
+  
+  .flip-card{ perspective:1400px; margin-bottom:14px; }
+  .flip-inner{ position:relative; width:100%; min-height:300px; transition:transform .65s var(--ease-pop); transform-style:preserve-3d; }
+  .flip-card.flipped .flip-inner{ transform:rotateY(180deg); }
+  .flip-front, .flip-back{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-sizing:border-box; overflow-y:auto; border-radius:20px; padding:22px; text-align:center; background:var(--glass-bg); border:1px solid var(--glass-border); }
+  .flip-back{ transform:rotateY(180deg); }
+
+  .ttt-board{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:270px; margin:0 auto 16px;}
+  .ttt-cell{aspect-ratio:1; background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:32px; cursor:pointer;}
+  .c4-board{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; max-width:320px; margin:0 auto 14px; background:linear-gradient(160deg, var(--plum-2), var(--plum)); padding:8px; border-radius:14px; }
+  .c4-cell{aspect-ratio:1; border-radius:50%; background:rgba(20,18,36,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center;}
+
+  .gift-card, .jar-note, .letter-card, .capsule-card, .feed-item, .composer, .settings-block, .qcard, .tod-card, .draw-wrap{ background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:var(--glass-shadow); backdrop-filter:var(--glass-blur);}
+  
+  .sheet-backdrop{ position:fixed; inset:0; background:rgba(10,9,20,0.6); backdrop-filter:blur(2px); display:flex; align-items:flex-end; justify-content:center; z-index:700; animation:backdropFadeIn .25s ease; }
+  .sheet{ width:100%; max-width:480px; background:var(--ink-2); border-top:1px solid var(--line-2); border-radius:22px 22px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom,0)); transform-origin:bottom center; box-shadow:0 -10px 40px rgba(0,0,0,0.5); }
+  .sheet-handle{width:36px; height:4px; border-radius:2px; background:var(--line-2); margin:0 auto 14px;}
+  
+  .streak-pill{ background:rgba(227,168,87,0.15); border:1px solid rgba(227,168,87,0.3); color:var(--gold); border-radius:99px; padding:4px 10px; font-size:11px; font-weight:700; letter-spacing:0.04em; margin-left:8px; }
+
+  /* Giant Heart Animation for Heartbeat feature */
+  .giant-heart { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%) scale(0); font-size:150px; filter:drop-shadow(0 0 40px var(--rose)); z-index:900; pointer-events:none; opacity:0; }
+  @keyframes heartbeatAnim { 
+    0% { transform:translate(-50%, -50%) scale(0); opacity:1; }
+    15% { transform:translate(-50%, -50%) scale(1.2); opacity:1; }
+    30% { transform:translate(-50%, -50%) scale(0.9); opacity:1; }
+    45% { transform:translate(-50%, -50%) scale(1.3); opacity:1; }
+    100% { transform:translate(-50%, -50%) scale(1.5); opacity:0; }
+  }
+
+  /* Sync Breathe Animation */
+  .breathe-container { display:flex; flex-direction:column; align-items:center; justify-content:center; height:300px; }
+  .breathe-circle { width:150px; height:150px; border-radius:50%; background:radial-gradient(circle, var(--sky), var(--plum)); box-shadow:0 0 40px var(--sky); animation: breatheAnim 10s infinite ease-in-out; }
+  @keyframes breatheAnim { 0%, 100% { transform:scale(1); opacity:0.5; } 40% { transform:scale(1.8); opacity:1; } 50% { transform:scale(1.8); opacity:1; } }
+  .breathe-text { margin-top: 60px; font-family:'Fraunces',serif; font-size:22px; color:var(--sky); animation: textFade 10s infinite ease-in-out; }
+  @keyframes textFade { 0%, 100% { content:"Exhale..."; opacity:0.5; } 20% { content:"Inhale..."; opacity:1; } 45% { content:"Hold..."; opacity:1; } 60% { content:"Exhale..."; opacity:0.8; } }
+
+  .toast{ position:fixed; bottom:120px; left:50%; transform:translateX(-50%); background:var(--gold); color:#20160A; font-weight:600; font-size:13.5px; padding:10px 18px; border-radius:999px; z-index:800; box-shadow:0 8px 20px rgba(0,0,0,0.35); }
+</style>
+</head>
+<body>
+<div class="stars-bg"></div>
+<div class="moon-bg"></div>
+
+<div class="app" id="app">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--cream-dim);font-size:13px;">
+    Loading Orbit…
+  </div>
+</div>
+
+<!-- Progressive Web App Generator Data -->
+<script>
+  const manifest = {
+    "name": "Orbit",
+    "short_name": "Orbit",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0B0A16",
+    "theme_color": "#0B0A16",
+    "icons": [{"src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231C1A35'/><circle cx='50' cy='50' r='30' fill='%23E3A857'/></svg>", "sizes": "512x512", "type": "image/svg+xml"}]
+  };
+  const stringManifest = JSON.stringify(manifest);
+  const blob = new Blob([stringManifest], {type: 'application/json'});
+  const manifestURL = URL.createObjectURL(blob);
+  document.querySelector('head').insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestURL}">`);
+</script>
+
+<!-- Leaflet Map Script -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getDatabase, ref, set as fbSet, get as fbGet, remove as fbRemove, onValue } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAkeVSLJQItL0JBLiO0cx2ojW8scxF_Qe8",
+  authDomain: "mikan-4680c.firebaseapp.com",
+  databaseURL: "https://mikan-4680c-default-rtdb.firebaseio.com",
+  projectId: "mikan-4680c",
+  storageBucket: "mikan-4680c.firebasestorage.app",
+  messagingSenderId: "911615647527",
+  appId: "1:911615647527:web:bc9b04cba1df6bf4f35302"
+};
+
+let appFirebase = null, db = null, firebaseReady = false;
+try{
+  appFirebase = initializeApp(firebaseConfig);
+  db = getDatabase(appFirebase);
+  firebaseReady = true;
+}catch(e){ console.error('firebase init failed', e); }
+
+(function(){
+  "use strict";
+
+  const hasCloudStorage = firebaseReady;
+  const LS_PREFIX = 'orbit:';
+  function lsKey(key, shared){ return LS_PREFIX + (shared?'shared':'local') + ':' + key; }
+  
+  const localStorageBackend = {
+    async get(key, shared){ try{ const raw = localStorage.getItem(lsKey(key, shared)); return raw===null ? null : {value: raw}; }catch(e){ return null; } },
+    async set(key, value, shared){ try{ localStorage.setItem(lsKey(key, shared), value); return true; }catch(e){ return false; } },
+    async delete(key, shared){ try{ localStorage.removeItem(lsKey(key, shared)); return true; }catch(e){ return false; } }
+  };
+
+  function fbEncode(key){ return String(key).replace(/[.#$\[\]/]/g, c => '~' + c.charCodeAt(0) + '~'); }
+  const SHARED_ROOT = 'orbit-shared';
+
+  const firebaseBackend = {
+    async get(key, shared){
+      if(!shared) return localStorageBackend.get(key, shared);
+      try{ const snap = await fbGet(ref(db, SHARED_ROOT + '/' + fbEncode(key))); return snap.exists() ? {value: snap.val()} : null; }
+      catch(e){ return localStorageBackend.get(key, shared); }
+    },
+    async set(key, value, shared){
+      if(!shared) return localStorageBackend.set(key, value, shared);
+      try{ await fbSet(ref(db, SHARED_ROOT + '/' + fbEncode(key)), value); return true; }
+      catch(e){ return localStorageBackend.set(key, value, shared); }
+    },
+    async delete(key, shared){
+      if(!shared) return localStorageBackend.delete(key, shared);
+      try{ await fbRemove(ref(db, SHARED_ROOT + '/' + fbEncode(key))); return true; }
+      catch(e){ return localStorageBackend.delete(key, shared); }
+    }
+  };
+
+  const storageBackend = hasCloudStorage ? firebaseBackend : localStorageBackend;
+
+  async function sGet(key, shared){ const r = await storageBackend.get(key, !!shared); return r ? r.value : null; }
+  async function sSet(key, value, shared){ return await storageBackend.set(key, value, !!shared); }
+  async function sDelete(key, shared){ return await storageBackend.delete(key, !!shared); }
+
+  let remoteChangeTimer = null, sawFirstSnapshot = false;
+  if(hasCloudStorage){
+    onValue(ref(db, SHARED_ROOT), ()=>{
+      if(!sawFirstSnapshot){ sawFirstSnapshot = true; return; }
+      clearTimeout(remoteChangeTimer);
+      remoteChangeTimer = setTimeout(()=>{ if(typeof pollTick==='function') pollTick(); }, 250);
+    });
+  }
+
+  function getJSON(v, fallback){ if(!v) return fallback; try{ return JSON.parse(v); }catch(e){ return fallback; } }
+  function fmtDate(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+  function today(){ return fmtDate(new Date()); }
+  function timeAgo(ts){ const s = Math.floor((Date.now()-ts)/1000); if(s<60) return 'just now'; if(s<3600) return Math.floor(s/60)+'m ago'; if(s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  
+  /* Distance calculation */
+  function getDistanceKm(lat1, lon1, lat2, lon2) {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); return Math.round(R * c);
+  }
+
+  const ENERGY_TAGS = { 1:'Running on Empty', 2:'Battery Low', 3:'Rough Day', 4:'Getting There', 5:'Chilling', 6:'Steady', 7:'Feeling Good', 8:'Glowing', 9:'On Fire', 10:'Unstoppable' };
+  function energyTier(score){ return score<=3 ? 'low' : score<=6 ? 'balanced' : 'radiant'; }
+  function energyTierColors(score){ const t = energyTier(score); if(t==='low') return {a:'#4B5385', b:'#232249', accent:'#8890C7'}; if(t==='balanced') return {a:'#E3A857', b:'#5A4A8A', accent:'#F0C382'}; return {a:'#E8879C', b:'#9763D6', accent:'#F2A6B8'}; }
+
+  const QUIZ_QUESTIONS = [
+    "What's my go-to comfort food?", "What's my favorite memory of us?", "What's the first thing I do when I wake up?",
+    "What's a small thing that instantly annoys me?", "What's my dream trip destination?", "What's my biggest pet peeve about texting?"
+  ];
+
+  const DECKS = [
+    {id:'deep', name:'Deep Talks', emo:'🌊', questions:[
+      "What's something you've never told anyone but would tell me?", "What does a truly good life look like to you, ten years from now?",
+      "What's a fear you have about us that you rarely say out loud?", "When do you feel most understood by me?",
+      "What does 'home' mean to you right now?", "What's something I do that makes you feel safe?"
+    ]},
+    {id:'late', name:'Late Night Thoughts', emo:'🌙', questions:[
+      "What's on your mind right now that you haven't said yet?", "What's a memory of us that randomly replays in your head?",
+      "If you could freeze one hour we've spent together, which one?", "What do you think about right before you fall asleep most nights?",
+      "What's a question you're scared to ask me?", "What's something you wish you could tell me right now if I were next to you?"
+    ]},
+    {id:'wyr', name:'Would You Rather', emo:'🎲', questions:[
+      "Would you rather we live somewhere freezing cold together or somewhere unbearably hot?", "Would you rather have one long call a day or five short ones?",
+      "Would you rather I surprise-visit you or you always know exactly when I'm coming?", "Would you rather we argue it out immediately or always sleep on it first?",
+      "Would you rather have unlimited money but live apart one more year, or be broke but together tomorrow?"
+    ]},
+    {id:'deen', name:'Islamic / Deen Questions', emo:'🕌', questions:[
+      "What's a dua you find yourself repeating for us lately?", "Which prophet's story has shaped you the most, and why?",
+      "What does a barakah-filled home look like to you once we're married?", "What's a sunnah you'd like us to build into our daily life together?",
+      "How do you want us to handle deen disagreements with respect, not ego?", "What's a surah or ayah that reminds you of patience during distance?"
+    ]},
+    {id:'future', name:'Future Planning', emo:'🗺️', questions:[
+      "Where do you actually picture us living in five years?", "What's non-negotiable for you in how we split finances?",
+      "How many kids, roughly, and how far apart?", "What does a normal Tuesday look like for us once we're together for good?",
+      "What's a goal of mine you want to make sure I don't quietly give up on?", "How do we want to handle it when our families disagree with a decision we make?"
+    ]}
+  ];
+
+  const TRUTHS_LDR = [
+    "What was your exact first impression when we met?", "What's the most you've cried over missing me?",
+    "Have you ever rehearsed a conversation with me in your head before calling?", "What's one insecurity you have about this relationship you rarely mention?",
+    "What's a photo of me you look at the most when you miss me?", "What's something you do when we're on a call that I don't know about?"
+  ];
+  const DARES_LDR = [
+    "Send a 5-second video doing your best impression of me.", "Send a voice note expressing how much you miss me.",
+    "Text me a paragraph in the most dramatic, over-the-top romantic language you can.", "Send a photo of exactly what's in front of you right now, no cleaning up first.",
+    "Record yourself explaining why you love me using only your hands, no talking.", "Do 10 push-ups on camera right now and send proof."
+  ];
+
+  const state = {
+    identity: null, couple: null, tab: 'today', activeFeature: null,
+    routinesShared: [], routinesPersonal: {A:[], B:[]}, logToday: {A:{}, B:{}}, streaks: {A:0, B:0},
+    bucketList: [], feed: [], profile: {A:null, B:null}, weather: {A:null, B:null},
+    deckCurrent: {}, deckAnswers: {}, tod: null, games: {ttt:null, c4:null}, canvas: null, quizToday: null, quizScores: {A:0, B:0},
+    giftboxes: [], jarNotes: [], scratchToday: {A:null, B:null}, letters: [], capsules: [],
+    energyToday: {A:[], B:[]}, lastSeenHeartbeatTs: 0, customDecks: [], customTod: {truths:[], dares:[]},
+    instantIncoming: null, instantSent: null
+  };
+
+  const app = document.getElementById('app');
+  const SECRET_PASSCODE = "iluye2026"; 
+
+  function renderLogin(){
+    app.innerHTML = `
+    <div class="onboard">
+      <div class="onboard-mark">🔒 Private Space</div>
+      <h1>Welcome back.</h1>
+      <p class="onboard-sub">Enter your shared passcode to access Orbit.</p>
+      <div class="field"><label>Passcode</label><input type="password" id="login-passcode" placeholder="Enter passcode"></div>
+      <button class="btn btn-primary btn-block" id="login-btn">Log In</button>
+      <p class="onboard-sub" id="login-err" style="color:var(--rose); display:none; margin-top:10px;">Incorrect passcode. Try again.</p>
+    </div>`;
+    document.getElementById('login-btn').onclick = () => {
+      if(document.getElementById('login-passcode').value === SECRET_PASSCODE) {
+        localStorage.setItem('orbit:authed', 'true'); boot();
+      } else { document.getElementById('login-err').style.display = 'block'; }
+    };
+  }
+
+  async function boot(){
+    if(localStorage.getItem('orbit:authed') !== 'true'){ renderLogin(); return; }
+    state.identity = getJSON(await sGet('identity', false), null);
+    state.couple = getJSON(await sGet('couple-config', true), null);
+    if(!state.identity || !state.couple){ renderOnboarding(); return; }
+    state.lastSeenHeartbeatTs = parseInt(getJSON(await sGet('heartbeat-seen:'+myRole(), true), '0'), 10) || 0;
+    await loadAll();
+    renderApp();
+    reportPresence();
+  }
+
+  async function loadAll(){
+    state.routinesShared = getJSON(await sGet('routines-shared', true), [{id:'quran', label:'Read Quran'}]);
+    
+    // Personalized defaults for their personal lists based on context
+    const defaultPersonal = {
+      A: [{id:uid(), label:'Study Economics'}, {id:uid(), label:'Reach 2500 rapid rating in chess (10 hours/week) ♟️'}],
+      B: []
+    };
+    state.routinesPersonal = getJSON(await sGet('routines-personal', true), defaultPersonal);
+    
+    state.logToday = getJSON(await sGet('routine-log:'+today(), true), {A:{}, B:{}});
+    
+    // Personalized bucket list based on context
+    state.bucketList = getJSON(await sGet('bucket-list', true), [
+      {id:uid(), text:'Travel between UAE and Ethiopia together ✈️', done:false},
+      {id:uid(), text:'Adopt another kitten 🐾', done:false},
+      {id:uid(), text:'Play a chess marathon ♟️', done:false}
+    ]);
+
+    await computeStreaks();
+    
+    state.profile.A = getJSON(await sGet('live:A', true), null);
+    state.profile.B = getJSON(await sGet('live:B', true), null);
+    state.energyToday.A = getJSON(await sGet('energy:'+today()+':A', true), []);
+    state.energyToday.B = getJSON(await sGet('energy:'+today()+':B', true), []);
+    
+    const feedIds = getJSON(await sGet('feed-index', true), []);
+    const items = [];
+    for(const id of feedIds.slice(0,30)){ const item = getJSON(await sGet('feed:'+id, true), null); if(item) items.push(item); }
+    state.feed = items.sort((a,b)=>b.ts-a.ts);
+
+    state.quizToday = getJSON(await sGet('quiz:'+today(), true), {question: QUIZ_QUESTIONS[quizDateIndex()]});
+    state.quizScores = getJSON(await sGet('quiz-scores', true), {A:0, B:0});
+    
+    const mineInst = getJSON(await sGet('instant:'+myRole(), true), null);
+    state.instantIncoming = (mineInst && mineInst.from===otherRole()) ? mineInst : null;
+    const theirsInst = getJSON(await sGet('instant:'+otherRole(), true), null);
+    state.instantSent = (theirsInst && theirsInst.from===myRole()) ? theirsInst : null;
+  }
+
+  async function computeStreaks(){
+    for(const role of ['A','B']){
+      let streak = 0; let d = new Date(); d.setDate(d.getDate()-1);
+      for(let i=0;i<60;i++){
+        const log = getJSON(await sGet('routine-log:'+fmtDate(d), true), null);
+        if(!log) break;
+        const done = log[role] || {};
+        const sharedTotal = state.routinesShared.length;
+        const personalTotal = (state.routinesPersonal[role]||[]).length;
+        const total = sharedTotal + personalTotal;
+        const doneCount = state.routinesShared.filter(r=>done[r.id]).length + (state.routinesPersonal[role]||[]).filter(r=>done[r.id]).length;
+        if(total>0 && doneCount===total){ streak++; d.setDate(d.getDate()-1); } else break;
+      }
+      state.streaks[role] = streak;
+    }
+  }
+
+  function myRole(){ return state.identity.role; }
+  function otherRole(){ return state.identity.role==='A' ? 'B':'A'; }
+  function nameFor(role){ return role==='A' ? state.couple.nameA : state.couple.nameB; }
+
+  function renderOnboarding(){
+    if(!state.couple){
+      app.innerHTML = `<div class="onboard"><h1>Orbit Setup</h1><div class="field"><label>Your name</label><input type="text" id="ob-name-a" placeholder="e.g. Abdusetar"></div><div class="field"><label>Their name</label><input type="text" id="ob-name-b" placeholder="e.g. Ilham"></div><button class="btn btn-primary" id="ob-continue">Continue</button></div>`;
+      document.getElementById('ob-continue').onclick = async ()=>{
+        const a = document.getElementById('ob-name-a').value.trim(), b = document.getElementById('ob-name-b').value.trim();
+        if(a && b){ await sSet('couple-config', JSON.stringify({nameA:a, nameB:b}), true); state.couple = {nameA:a, nameB:b}; renderOnboarding(); }
+      }; return;
+    }
+    app.innerHTML = `<div class="onboard"><h1>Which one are you?</h1><div class="role-pick"><button data-role="A">${escapeHtml(state.couple.nameA)}</button><button data-role="B">${escapeHtml(state.couple.nameB)}</button></div></div>`;
+    app.querySelectorAll('button').forEach(btn=>{
+      btn.onclick = async ()=>{ state.identity = {role: btn.getAttribute('data-role'), name: btn.textContent}; await sSet('identity', JSON.stringify(state.identity), false); await loadAll(); renderApp(); };
+    });
+  }
+
+  function renderApp(){
+    app.innerHTML = `
+      <div class="topbar"><div class="brand">Orbit</div></div>
+      <div class="content" id="content"></div>
+      
+      <div class="bottom-nav">
+        <button class="nav-item ${state.tab==='today'?'active':''}" data-tab="today"><div class="nav-icon">🏠</div><span>Home</span></button>
+        <button class="nav-item ${state.tab==='play'?'active':''}" data-tab="play"><div class="nav-icon">✨</div><span>Explore</span></button>
+        <button class="nav-item ${state.tab==='moments'?'active':''}" data-tab="moments"><div class="nav-icon">📸</div><span>Vault</span></button>
+        <button class="nav-item ${state.tab==='settings'?'active':''}" data-tab="settings"><div class="nav-icon">⚙️</div><span>Settings</span></button>
+      </div>
+
+      ${floatingLayerHtml()}
+    `;
+    app.querySelectorAll('.nav-item').forEach(b=>b.onclick = async ()=>{ state.tab = b.getAttribute('data-tab'); state.activeFeature = null; renderApp(); });
+    
+    const content = document.getElementById('content');
+    if(state.tab==='today') { content.innerHTML = profileBarHtml() + todayHtml(); initMap(); }
+    else if(state.tab==='play') { content.innerHTML = playHtml(); if(state.activeFeature==='draw') initDrawCanvas(); if(state.activeFeature==='scratch') initScratchCanvas(); }
+    else if(state.tab==='moments') content.innerHTML = momentsHtml();
+    else content.innerHTML = settingsHtml();
+    wireTabEvents(); wireFloatingLayer();
+  }
+
+  /* --- Visuals & Profile --- */
+  function auraOrbSvg(score, size){
+    if(score==null) return `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="rgba(245,240,232,0.05)" stroke="rgba(245,240,232,0.18)" stroke-width="1.5" stroke-dasharray="4 5"/><text x="50" y="56" text-anchor="middle" font-size="22" fill="rgba(245,240,232,0.35)" font-family="sans-serif">?</text></svg>`;
+    const id = 'aoid'+Math.random().toString(36).slice(2,8); const c = energyTierColors(score);
+    return `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><defs><radialGradient id="${id}" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="${c.accent}"/><stop offset="55%" stop-color="${c.a}"/><stop offset="100%" stop-color="${c.b}"/></radialGradient></defs><circle cx="50" cy="50" r="38" fill="url(#${id})" style="filter:drop-shadow(0 0 10px ${c.a}99);"/><circle cx="38" cy="36" r="10" fill="rgba(255,255,255,0.18)"/></svg>`;
+  }
+  function profileCardHtml(role, isMe){
+    const list = state.energyToday[role]; const entry = list && list.length ? list[list.length-1] : null;
+    const score = entry ? entry.score : null; const tier = score!=null ? energyTier(score) : 'none';
+    const p = state.profile[role]; const act = p ? p.activityLabel : null;
+    let battChip = '';
+    if(p && p.battery!=null) battChip = `<span style="display:flex;align-items:center;gap:4px;"><span class="batt-dot ${p.battery<=20&&!p.charging?'low':''}" style="width:7px;height:7px;border-radius:50%;background:${p.battery<=20&&!p.charging?'var(--rose)':'var(--sage)'};"></span>${p.battery}%${p.charging?' ⚡':''}</span>`;
+    
+    return `
+    <div class="profile-card tier-${tier}">
+      <div class="profile-name">${escapeHtml(nameFor(role))}${isMe?' <span style="color:var(--cream-dim);font-weight:400;">(you)</span>':''}</div>
+      <div class="profile-visuals"><div class="profile-visual-col"><div class="mini-orb-wrap">${auraOrbSvg(score, 58)}</div><div class="profile-visual-label">${score!=null?score+'/10':'No status'}</div></div></div>
+      <div class="profile-meta">${score!=null ? `<span class="aura-tag-inline">${escapeHtml(entry.tag)}</span>`:''} ${p&&p.city?`<span>${escapeHtml(p.city)}</span>`:''} ${battChip}</div>
+      ${isMe ? `<div class="profile-actions"><button id="aura-set-btn">Set Status</button><button id="my-activity-btn">${act?escapeHtml(act):"Activity"}</button></div>` 
+             : `<div class="profile-row">${act?`💬 <b>${escapeHtml(act)}</b>`:'No status'}</div><button class="care-btn" id="aura-care-btn">💓 Send Heartbeat</button>`}
+    </div>`;
+  }
+  function profileBarHtml(){ return `<div class="profile-bar">${profileCardHtml(myRole(),true)}<div class="status-divider"><div class="status-divider-pulse"></div></div>${profileCardHtml(otherRole(),false)}</div>`; }
+
+  /* --- TODAY TAB: Dashboard Map & To-Do Lists --- */
+  function pct(role){
+    const sharedTotal = state.routinesShared.length;
+    const personalTotal = (state.routinesPersonal[role] || []).length;
+    const total = sharedTotal + personalTotal;
+    if(total===0) return 0;
+    const done = state.routinesShared.filter(r=>state.logToday[role][r.id]).length + (state.routinesPersonal[role]||[]).filter(r=>state.logToday[role][r.id]).length;
+    return Math.round(done/total*100);
+  }
+  function ringSvg(percent, color){
+    const r=30, c=2*Math.PI*r, off = c - (percent/100)*c;
+    return `<svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--line-2)" stroke-width="7"/><circle cx="38" cy="38" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 38 38)" style="filter:drop-shadow(0 0 10px ${color}88);"/></svg>`;
+  }
+
+  function mapCardHtml() {
+    const pA = state.profile.A, pB = state.profile.B; let distBadge = '';
+    if (pA && pB && pA.lat && pA.lon && pB.lat && pB.lon) {
+      const dist = getDistanceKm(pA.lat, pA.lon, pB.lat, pB.lon);
+      if(dist > 0) distBadge = `<div class="map-distance-badge">${dist} km apart</div>`;
+    }
+    return `<div class="section-title" style="margin-top:10px;">Our World</div><div class="map-card">${distBadge}<div id="live-map"></div></div>`;
+  }
+
+  function todayHtml(){
+    const sharedHtml = state.routinesShared.map(r=>{
+      const mineDone = !!state.logToday[myRole()][r.id], theirsDone = !!state.logToday[otherRole()][r.id];
+      return `<div class="routine-item"><div class="routine-mid"><div class="routine-label">${escapeHtml(r.label)}</div><div class="routine-time">${nameFor(otherRole())} ${theirsDone?'done':'not yet'}</div></div><button class="inline-del" data-del-shared="${r.id}">✕</button><div class="check mine ${mineDone?'done':''}" data-log="${r.id}">${mineDone?'✓':''}</div></div>`;
+    }).join('');
+
+    const myPersonal = state.routinesPersonal[myRole()] || [];
+    const personalHtml = myPersonal.map(r=>{
+      const done = !!state.logToday[myRole()][r.id];
+      return `<div class="routine-item"><div class="routine-mid"><div class="routine-label">${escapeHtml(r.label)}</div></div><button class="inline-del" data-del-personal="${r.id}">✕</button><div class="check mine ${done?'done':''}" data-log="${r.id}">${done?'✓':''}</div></div>`;
+    }).join('');
+
+    const theirsPersonal = state.routinesPersonal[otherRole()] || [];
+    const theirsHtml = theirsPersonal.map(r=>{
+      const done = !!state.logToday[otherRole()][r.id];
+      return `<div class="routine-item"><div class="routine-mid"><div class="routine-label" style="color:var(--cream-dim);">${escapeHtml(r.label)}</div></div><div class="check theirs ${done?'done':''}">${done?'✓':''}</div></div>`;
+    }).join('');
+
+    return `
+      <div class="rings-row">
+        <div class="ring-card"><div class="who">${escapeHtml(nameFor(myRole()))}</div><div class="ring-visual">${ringSvg(pct(myRole()), 'var(--sage)')}<div class="ring-pct">${pct(myRole())}%</div></div><div class="streak-badge">🔥 ${state.streaks[myRole()]} days</div></div>
+        <div class="ring-card"><div class="who">${escapeHtml(nameFor(otherRole()))}</div><div class="ring-visual">${ringSvg(pct(otherRole()), 'var(--rose)')}<div class="ring-pct">${pct(otherRole())}%</div></div><div class="streak-badge">🔥 ${state.streaks[otherRole()]} days</div></div>
+      </div>
+      
+      ${mapCardHtml()}
+
+      <div class="section-title">Our Shared Routine</div>
+      ${sharedHtml || '<div class="section-sub">No shared tasks.</div>'}
+      <div class="inline-add"><input type="text" id="add-shared-input" placeholder="Add shared task..."><button class="btn btn-primary" id="add-shared-btn">+</button></div>
+      
+      <div class="section-title">${escapeHtml(nameFor(myRole()))}'s List</div>
+      ${personalHtml || '<div class="section-sub">No personal tasks.</div>'}
+      <div class="inline-add"><input type="text" id="add-personal-input" placeholder="Add personal task..."><button class="btn btn-primary" id="add-personal-btn">+</button></div>
+
+      <div class="section-title">${escapeHtml(nameFor(otherRole()))}'s List</div>
+      ${theirsHtml || `<div class="section-sub">They haven't added personal tasks.</div>`}
+    `;
+  }
+
+  function initMap() {
+    const mapEl = document.getElementById('live-map');
+    if(!mapEl || !window.L) return;
+    const pA = state.profile.A, pB = state.profile.B;
+    
+    // Default to Addis Ababa if no coords exist anywhere
+    let lat = 9.0192, lon = 38.7525, zoom = 2; 
+
+    if (pA?.lat && pB?.lat) { lat = (pA.lat + pB.lat) / 2; lon = (pA.lon + pB.lon) / 2; zoom = 3; }
+    else if (pA?.lat) { lat = pA.lat; lon = pA.lon; zoom = 5; }
+    else if (pB?.lat) { lat = pB.lat; lon = pB.lon; zoom = 5; }
+
+    const map = L.map('live-map', {zoomControl: false, dragging:false, scrollWheelZoom:false}).setView([lat, lon], zoom);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
+
+    const goldIcon = L.divIcon({className: 'custom-icon', html: `<div style="width:12px;height:12px;background:var(--gold);border-radius:50%;box-shadow:0 0 10px var(--gold);"></div>`});
+    const roseIcon = L.divIcon({className: 'custom-icon', html: `<div style="width:12px;height:12px;background:var(--rose);border-radius:50%;box-shadow:0 0 10px var(--rose);"></div>`});
+
+    if(pA?.lat) L.marker([pA.lat, pA.lon], {icon: myRole()==='A'?goldIcon:roseIcon}).addTo(map);
+    if(pB?.lat) L.marker([pB.lat, pB.lon], {icon: myRole()==='B'?goldIcon:roseIcon}).addTo(map);
+
+    if(pA?.lat && pB?.lat) L.polyline([[pA.lat, pA.lon], [pB.lat, pB.lon]], {color: 'rgba(255,255,255,0.2)', weight: 2, dashArray: '4, 6'}).addTo(map);
+  }
+
+  /* --- IG Style Floating Camera --- */
+  function floatingLayerHtml(){
+    const hasIncoming = state.instantIncoming && state.instantIncoming.status==='unopened';
+    return `<div class="floating-layer"><div class="ig-floating-cam" id="ig-fab"><div class="ig-cam-icon-bg"><div class="ig-cam-icon-inner">📷</div></div>${hasIncoming?'<div class="ig-cam-dot"></div>':''}</div></div>`;
+  }
+
+  function renderInstantModal(){
+    const backdrop = document.createElement('div'); backdrop.className = 'ig-cam-backdrop';
+    if(state.instantIncoming && state.instantIncoming.status === 'unopened'){
+      backdrop.innerHTML = `<h3 style="color:#fff; margin-bottom:16px;">From ${escapeHtml(nameFor(otherRole()))}</h3><div class="ig-cam-square"><img src="${state.instantIncoming.dataUrl}" class="ig-cam-img"></div><button class="btn btn-ghost" id="ig-cam-close" style="margin-top:24px; color:#fff; border-color:#fff;">Close (Disappears)</button>`;
+      document.body.appendChild(backdrop);
+      backdrop.querySelector('#ig-cam-close').onclick = async () => { state.instantIncoming.status = 'opened'; await sSet('instant:'+myRole(), JSON.stringify(state.instantIncoming), true); document.body.removeChild(backdrop); renderApp(); };
+      return;
+    }
+    backdrop.innerHTML = `<h3 style="color:#fff; margin-bottom:16px;">Instant Photo</h3><div class="ig-cam-square" id="ig-cam-preview" style="display:flex;align-items:center;justify-content:center;background:#111;"><span style="color:#666;">No photo selected</span></div><div class="ig-cam-controls"><label class="btn btn-ghost" style="flex:1; color:#fff; border-color:#fff; cursor:pointer;">Capture <input type="file" id="ig-cam-input" accept="image/*" capture="environment" style="display:none;"></label><button class="btn btn-primary" id="ig-cam-send" style="flex:1;" disabled>Send instantly</button></div><button class="btn btn-ghost" id="ig-cam-cancel" style="margin-top:16px; border:none; color:#bbb;">Cancel</button>`;
+    document.body.appendChild(backdrop);
+    let pendingDataUrl = null;
+    backdrop.querySelector('#ig-cam-input').onchange = (e) => {
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader(); reader.onload = ()=>{
+        const img = new Image(); img.onload = ()=>{
+          const canvas = document.createElement('canvas'); const size = Math.min(img.width, img.height);
+          canvas.width = size; canvas.height = size; const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
+          pendingDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          backdrop.querySelector('#ig-cam-preview').innerHTML = `<img src="${pendingDataUrl}" class="ig-cam-img">`;
+          backdrop.querySelector('#ig-cam-send').disabled = false;
+        }; img.src = reader.result;
+      }; reader.readAsDataURL(file);
+    };
+    backdrop.querySelector('#ig-cam-send').onclick = async () => {
+      if(!pendingDataUrl) return; const item = {id:uid(), from:myRole(), dataUrl:pendingDataUrl, status:'unopened', ts:Date.now()};
+      await sSet('instant:'+otherRole(), JSON.stringify(item), true);
+      document.body.removeChild(backdrop); showToast('Photo sent ⚡'); renderApp();
+    };
+    backdrop.querySelector('#ig-cam-cancel').onclick = () => document.body.removeChild(backdrop);
+  }
+
+  function wireFloatingLayer(){ const fab = document.getElementById('ig-fab'); if(fab) fab.onclick = renderInstantModal; }
+
+  /* --- EXPLORE TAB (Grid App Launcher) --- */
+  function playHtml(){
+    if (state.activeFeature) {
+      let content = '';
+      if(state.activeFeature === 'quiz') content = quizHtml();
+      else if(state.activeFeature === 'decks') content = activeDeckId ? deckQuestionHtml() : deckListHtml();
+      else if(state.activeFeature === 'tod') content = todHtml();
+      else if(state.activeFeature === 'ttt') content = `<h3 style="margin-bottom:10px;">Tic-Tac-Toe</h3>${tttBoardHtml()}`;
+      else if(state.activeFeature === 'c4') content = `<h3 style="margin-bottom:10px;">Connect 4</h3>${c4BoardHtml()}`;
+      else if(state.activeFeature === 'draw') content = drawHtml();
+      else if(state.activeFeature === 'jar') content = jarHtml();
+      else if(state.activeFeature === 'scratch') content = scratchHtml();
+      else if(state.activeFeature === 'letters') content = lettersHtml();
+      else if(state.activeFeature === 'capsules') content = capsulesHtml();
+      else if(state.activeFeature === 'boxes') content = giftBoxesHtml();
+      else if(state.activeFeature === 'bucket') content = bucketListHtml();
+      else if(state.activeFeature === 'breathe') content = breatheHtml();
+
+      return `<button class="btn btn-ghost" id="back-to-grid" style="margin-bottom:16px;">← Back to Explore</button>${content}`;
+    }
+
+    return `
+      <div class="section-title">Explore</div>
+      <div class="section-sub">Tap an app to open it with ${escapeHtml(nameFor(otherRole()))}.</div>
+      <div class="launcher-grid">
+        <div class="launcher-btn" data-feature="quiz"><div class="launcher-emo">📝</div>Daily Quiz</div>
+        <div class="launcher-btn" data-feature="decks"><div class="launcher-emo">🃏</div>Questions</div>
+        <div class="launcher-btn" data-feature="tod"><div class="launcher-emo">🎭</div>Truth/Dare</div>
+        <div class="launcher-btn" data-feature="ttt"><div class="launcher-emo">❌</div>Tic-Tac-Toe</div>
+        <div class="launcher-btn" data-feature="c4"><div class="launcher-emo">🔴</div>Connect 4</div>
+        <div class="launcher-btn" data-feature="draw"><div class="launcher-emo">🎨</div>Duo Draw</div>
+        <div class="launcher-btn" data-feature="jar"><div class="launcher-emo">🫙</div>Notes Jar</div>
+        <div class="launcher-btn" data-feature="scratch"><div class="launcher-emo">🎟️</div>Scratchers</div>
+        <div class="launcher-btn" data-feature="letters"><div class="launcher-emo">💌</div>Open When</div>
+        <div class="launcher-btn" data-feature="capsules"><div class="launcher-emo">🎙️</div>Voice Vault</div>
+        <div class="launcher-btn" data-feature="boxes"><div class="launcher-emo">🎁</div>Gift Boxes</div>
+        <div class="launcher-btn" data-feature="bucket"><div class="launcher-emo">✈️</div>Bucket List</div>
+        <div class="launcher-btn" data-feature="breathe"><div class="launcher-emo">🌬️</div>Sync Breathe</div>
+      </div>
+    `;
+  }
+
+  function quizDateIndex(){ return Math.floor(new Date(today()).getTime()/86400000) % QUIZ_QUESTIONS.length; }
+  function quizHtml(){
+    const q = state.quizToday || {question: QUIZ_QUESTIONS[quizDateIndex()]};
+    const mine = q[myRole()], theirs = q[otherRole()], myGuess = q['guess'+myRole()], theirGuess = q['guess'+otherRole()];
+    const bothReady = mine && theirs && myGuess && theirGuess;
+    let body = bothReady ? `
+      <div style="font-size:13px; margin-bottom:10px; border-bottom:1px solid var(--line); padding-bottom:6px;"><span>${escapeHtml(nameFor(myRole()))}'s answer</span><br><b>${escapeHtml(mine.text)}</b></div>
+      <div style="font-size:13px;"><span>${escapeHtml(nameFor(otherRole()))}'s answer</span><br><b>${escapeHtml(theirs.text)}</b></div>
+      <button class="btn btn-ghost btn-block" id="quiz-win-btn" style="margin-top:16px;">I guessed right (+1 Streak)</button>
+    ` : !mine ? `<textarea id="quiz-answer" placeholder="Your answer..." style="margin-bottom:10px; width:100%; border-radius:12px;"></textarea><button class="btn btn-primary btn-block" id="quiz-submit-btn">Submit Answer</button>
+    ` : !myGuess ? `<textarea id="quiz-guess" placeholder="Your guess..." style="margin-bottom:10px; width:100%; border-radius:12px;"></textarea><button class="btn btn-primary btn-block" id="quiz-guess-btn">Submit Guess</button>
+    ` : `<div class="section-sub">Waiting on ${escapeHtml(nameFor(otherRole()))}...</div>`;
+    
+    return `<div class="section-title">Daily Connection Quiz <span class="streak-pill">🔥 Streak: ${state.quizScores[myRole()]}</span></div>
+    <div class="qcard" style="margin-top:10px; background:var(--glass-bg); padding:20px; border-radius:16px;">
+      <div style="font-family:'Fraunces',serif; font-size:18px; margin-bottom:16px;">${escapeHtml(q.question)}</div>${body}
+    </div>`;
+  }
+
+  function deckListHtml(){ return `<div class="deck-grid">${DECKS.map(d=>`<div class="deck-card" data-deck="${d.id}"><div class="deck-stack-layer l2"></div><div class="deck-stack-layer l1"></div><div class="deck-stack-top"><div class="deck-emo">${d.emo}</div><div class="deck-name">${escapeHtml(d.name)}</div></div></div>`).join('')}</div>`; }
+  function deckQuestionHtml(){
+    const deck = DECKS.find(d=>d.id===activeDeckId); const qi = (state.deckCurrent[deck.id]||{}).qIndex||0; const q = deck.questions[qi]; const ans = state.deckAnswers[deck.id+':'+qi] || {};
+    return `
+    <button class="btn-ghost btn" id="deck-back" style="margin-bottom:10px;">← Back</button>
+    <div class="flip-card ${deckFlipped?'flipped':''}" id="deck-flip">
+      <div class="flip-inner">
+        <div class="flip-front" id="flip-front"><div class="flip-deck-emo">${deck.emo}</div><div class="flip-tap-hint">✨ Tap to reveal</div></div>
+        <div class="flip-back qcard"><div class="qcard-text">${escapeHtml(q)}</div>
+        ${ans[myRole()] && ans[otherRole()] ? `<div class="qcard-answer" style="margin-bottom:10px;"><b>${escapeHtml(nameFor(myRole()))}</b><br>${escapeHtml(ans[myRole()].text)}</div><div class="qcard-answer"><b>${escapeHtml(nameFor(otherRole()))}</b><br>${escapeHtml(ans[otherRole()].text)}</div>` 
+        : ans[myRole()] ? `Waiting on ${escapeHtml(nameFor(otherRole()))}...` : `<textarea id="deck-answer" placeholder="Answer..." style="border-radius:12px; margin-bottom:10px;"></textarea><button class="btn btn-primary btn-block" id="deck-submit">Submit</button>`}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function todHtml(){
+    const t = state.tod;
+    if(!t) return `<div style="display:flex; gap:16px; margin-top:22px;"><div class="tod-deck" style="flex:1;"><div class="tod-deck-card truth-back" id="tod-draw-truth"><div class="tod-deck-mark">🌊</div><div class="tod-deck-label">Draw a Truth</div></div></div><div class="tod-deck" style="flex:1;"><div class="tod-deck-card dare-back" id="tod-draw-dare"><div class="tod-deck-mark">🔥</div><div class="tod-deck-label">Draw a Dare</div></div></div></div>`;
+    const iDone = (t.doneBy||[]).includes(myRole());
+    return `<div class="tod-card" id="tod-card-el"><div class="tod-type ${t.type}">${t.type}</div><div class="tod-text">${escapeHtml(t.text)}</div><div class="section-sub" style="margin-top:12px;">Drawn by ${escapeHtml(nameFor(t.from))}</div></div><button class="btn btn-primary btn-block" id="tod-complete" ${iDone?'disabled':''}>${iDone?'Done ✓':'Mark done'}</button><button class="btn btn-ghost btn-block" id="tod-new" style="margin-top:10px;">Draw new</button>`;
+  }
+
+  function tttBoardHtml(){ return `<div class="ttt-board">${(state.games.ttt||{board:Array(9).fill(null)}).board.map((v,i)=>`<div class="ttt-cell ${!v?'open':''}" data-ttt="${i}">${v||''}</div>`).join('')}</div><button class="btn btn-ghost btn-block" data-ttt-reset="1">New game</button>`; }
+  function c4BoardHtml(){ return `<div class="c4-board">${(state.games.c4||{board:Array(42).fill(null)}).board.map(v=>`<div class="c4-cell ${v==='A'?'a':v==='B'?'b':''}">${v?v:''}</div>`).join('')}</div><button class="btn btn-ghost btn-block" data-c4-reset="1">New game</button>`; }
+
+  function drawHtml(){ return `<div class="draw-wrap"><canvas class="draw-canvas" id="draw-canvas" width="600" height="600" style="background:var(--cream); width:100%; border-radius:12px;"></canvas><div class="draw-tools" style="display:flex; gap:8px; margin-top:10px;">${['#20160A','#E3A857','#E8879C','#8FBC94','#7EC8E3','#F5F0E8'].map(c=>`<div class="swatch ${c==='#20160A'?'active':''}" data-color="${c}" style="width:26px; height:26px; border-radius:50%; border:2px solid var(--line-2); background:${c}; cursor:pointer;"></div>`).join('')}<button class="btn btn-ghost" id="draw-clear" style="margin-left:auto; padding:6px 12px;">Clear</button></div></div>`; }
+  
+  function jarHtml(){ return `<div class="composer"><textarea id="jar-note-text" placeholder="Appreciate them…"></textarea><button class="btn btn-primary btn-block" id="jar-add" style="margin-top:8px;">Drop in jar</button></div><button class="btn btn-primary btn-block" id="jar-pull" style="margin-bottom:16px;">🫙 Pull note</button>${state.jarNotes.map(n=>`<div class="jar-note"><div style="font-size:11.5px; color:var(--cream-dim);">${escapeHtml(nameFor(n.from))}</div>${escapeHtml(n.text)}</div>`).join('')}`; }
+  
+  function scratchHtml(){
+    const fromThem = state.scratchToday[otherRole()];
+    return `${!state.scratchToday[myRole()] ? `<div class="composer"><textarea id="scratch-text" placeholder="Today's message…"></textarea><button class="btn btn-primary btn-block" id="scratch-send" style="margin-top:8px;">Send card</button></div>` : ''}
+    ${fromThem ? `<div class="scratch-wrap" style="height:130px; position:relative; background:var(--plum); border-radius:16px; overflow:hidden;"><div style="padding:30px 20px; text-align:center; font-family:'Fraunces',serif; font-size:18px;">${escapeHtml(fromThem.message)}</div><canvas id="scratch-canvas" width="600" height="300" style="position:absolute; top:0; left:0; width:100%; height:100%; touch-action:none; cursor:pointer;"></canvas></div>` : ''}`;
+  }
+
+  function lettersHtml(){ return `<button class="btn btn-primary btn-block" id="letter-new" style="margin-bottom:16px;">+ Write letter</button>${state.letters.map(l=>`<div class="letter-card" data-letter="${l.from===myRole()?'':l.id}"><div style="font-family:'Fraunces',serif; font-size:16px;">${l.opened?'💌':'✉️'} ${escapeHtml(l.label)}</div><div style="font-size:11.5px; color:var(--cream-dim); margin-top:2px;">${l.from===myRole() ? `To ${escapeHtml(nameFor(l.to))}` : `From ${escapeHtml(nameFor(l.from))}`}${l.opened?' · opened '+timeAgo(l.openedAt):(l.from===myRole()?' · unopened':' · tap to open')}</div>${l.opened||l.from===myRole() ? `<div style="margin-top:10px; background:var(--plum); padding:12px; border-radius:10px;">${escapeHtml(l.text)}</div>` : ''}</div>`).join('')}`; }
+  function capsulesHtml(){ return `<button class="btn btn-primary btn-block" id="capsule-new" style="margin-bottom:16px;">🎙️ Record capsule</button>${state.capsules.map(c=>`<div class="capsule-card"><div style="font-size:11px; color:var(--gold); text-transform:uppercase;">${c.from===myRole()?'Sent':'For you'} · 🎙️</div>${Date.now()<c.unlockAt ? `<div style="color:var(--cream-dim); margin-top:8px;">🔒 Unlocks ${new Date(c.unlockAt).toLocaleDateString()}</div>` : `<audio controls src="${c.audio}" style="width:100%; margin-top:8px;"></audio>`}</div>`).join('')}`; }
+  function giftBoxesHtml(){ return `<button class="btn btn-primary btn-block" id="gift-new" style="margin-bottom:16px;">+ Send gift box</button>${state.giftboxes.map(g=>`<div class="gift-card"><div style="font-size:11px; color:var(--gold); text-transform:uppercase;">${g.from===myRole()?'Sent':'For you'} · 🎁</div>${!g.opened&&(g.unlockType==='time'&&Date.now()<g.unlockAt) ? `<div style="color:var(--cream-dim); margin-top:8px;">🔒 Time locked</div>` : !g.opened&&g.unlockType==='pin' ? `<div style="margin-top:8px;"><input type="text" id="pin-${g.id}" placeholder="PIN" style="width:80px; display:inline-block; border-radius:12px;"> <button class="btn btn-primary" data-unlock-pin="${g.id}" style="display:inline-block; padding:8px 12px; border-radius:12px;">Unlock</button></div>` : `<div style="margin-top:8px; background:var(--plum); padding:12px; border-radius:10px;">${escapeHtml(g.content)}</div>`}</div>`).join('')}`; }
+
+  function bucketListHtml() {
+    return `
+      <div class="section-title">Our Bucket List ✈️</div>
+      <div class="section-sub">Dreams, trips, and late-night ideas for the future.</div>
+      <div class="inline-add"><input type="text" id="add-bucket-input" placeholder="Add a shared goal..."><button class="btn btn-primary" id="add-bucket-btn">+</button></div>
+      ${state.bucketList.map(b=>`<div class="routine-item"><div class="routine-mid"><div class="routine-label" style="${b.done?'text-decoration:line-through; color:var(--cream-dim);':''}">${escapeHtml(b.text)}</div></div><button class="inline-del" data-del-bucket="${b.id}">✕</button><div class="check mine ${b.done?'done':''}" data-log-bucket="${b.id}">${b.done?'✓':''}</div></div>`).join('')}
+    `;
+  }
+
+  function breatheHtml() {
+    return `
+      <div class="section-title" style="text-align:center;">Sync Breathe</div>
+      <div class="section-sub" style="text-align:center;">Breathe together. Open this anytime you feel overwhelmed.</div>
+      <div class="breathe-container">
+        <div class="breathe-circle"></div>
+        <div class="breathe-text" style="position:absolute;">Inhale...</div>
+      </div>
+    `;
+  }
+
+  /* --- Moments Tab (with Memory Vault) --- */
+  function momentsHtml(){
+    return `
+      <div class="composer"><textarea id="moment-text" placeholder="Drop a note..."></textarea><button class="btn btn-primary btn-block" id="moment-send">Post</button></div>
+      <button class="btn btn-ghost btn-block" id="memory-vault-btn" style="margin-bottom:16px;">🕰️ Time Machine (Random Memory)</button>
+      ${state.feed.map(f=>`<div class="feed-item"><div style="font-weight:bold; margin-bottom:6px;">${escapeHtml(nameFor(f.role))} <span style="font-weight:normal; font-size:11px; color:var(--cream-dim)">· ${timeAgo(f.ts)}</span></div>${escapeHtml(f.text)}</div>`).join('')}
+    `;
+  }
+
+  function settingsHtml(){
+    return `<div class="section-title">Settings & Devices</div>
+      <div class="settings-block">
+        <h3 style="margin-bottom:10px;">Setup Native App & Widgets</h3>
+        <p style="font-size:12px; color:var(--cream-dim); margin-bottom:10px;">Because Orbit is a Progressive Web App, you can install it. Tap your browser's <b>Share icon</b>, then select <b>Add to Home Screen</b>. This enables full-screen mode and prepares the system to pull background widget data.</p>
+      </div>
+      <div class="settings-block">
+        <div class="field"><label>Your city (Updates Map)</label><input type="text" id="my-city-search" placeholder="e.g. Addis Ababa" value="${state.profile[myRole()]&&state.profile[myRole()].city?escapeHtml(state.profile[myRole()].city):''}"></div>
+        <button class="btn btn-ghost btn-block" id="my-city-find">Update Location</button>
+      </div>
+      <button class="btn btn-ghost btn-block" id="logout-btn" style="border-color:var(--rose); color:var(--rose);">Log Out (Lock Orbit)</button>`;
+  }
+
+  /* --- Event Wiring & Live Polling --- */
+  let drawCtx = null, drawColor = DRAW_COLORS[0], drawing = false, drawDirty = false;
+  function initDrawCanvas(){
+    const canvas = document.getElementById('draw-canvas'); if(!canvas) return;
+    drawCtx = canvas.getContext('2d'); drawCtx.lineCap = 'round'; drawCtx.lineWidth = 5; drawCtx.strokeStyle = drawColor;
+    function pos(e){ const r = canvas.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e; return {x:(p.clientX-r.left)*(canvas.width/r.width), y:(p.clientY-r.top)*(canvas.height/r.height)}; }
+    function start(e){ drawing=true; const p=pos(e); drawCtx.beginPath(); drawCtx.moveTo(p.x,p.y); e.preventDefault(); }
+    function move(e){ if(!drawing) return; const p=pos(e); drawCtx.lineTo(p.x,p.y); drawCtx.stroke(); drawDirty=true; e.preventDefault(); }
+    async function end(){ if(!drawing) return; drawing=false; if(drawDirty){ const dataUrl = canvas.toDataURL('image/jpeg', 0.7); await sSet('canvas:current', JSON.stringify({dataUrl, ts:Date.now()}), true); drawDirty=false; } }
+    canvas.onmousedown=start; canvas.onmousemove=move; window.addEventListener('mouseup', end);
+    canvas.ontouchstart=start; canvas.ontouchmove=move; canvas.ontouchend=end;
+  }
+
+  function initScratchCanvas(){
+    const canvas = document.getElementById('scratch-canvas'); if(!canvas) return;
+    const ctx = canvas.getContext('2d'); ctx.fillStyle = '#37315A'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#F5F0E8'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign='center'; ctx.fillText('Scratch to reveal ✨', canvas.width/2, canvas.height/2+8);
+    ctx.globalCompositeOperation = 'destination-out'; let scratching = false;
+    function pos(e){ const r = canvas.getBoundingClientRect(); const p = e.touches?e.touches[0]:e; return {x:(p.clientX-r.left)*(canvas.width/r.width), y:(p.clientY-r.top)*(canvas.height/r.height)}; }
+    function scratch(e){ const p = pos(e); ctx.beginPath(); ctx.arc(p.x,p.y,26,0,Math.PI*2); ctx.fill(); e.preventDefault(); }
+    canvas.onmousedown=(e)=>{scratching=true; scratch(e);}; canvas.onmousemove=(e)=>{ if(scratching) scratch(e); }; window.addEventListener('mouseup', ()=>scratching=false);
+    canvas.ontouchstart=(e)=>{scratching=true; scratch(e);}; canvas.ontouchmove=(e)=>{ if(scratching) scratch(e); }; canvas.ontouchend=()=>scratching=false;
+  }
+
+  function wireTabEvents(){
+    document.getElementById('aura-set-btn')?.addEventListener('click', ()=>{
+      const backdrop = document.createElement('div'); backdrop.className = 'sheet-backdrop';
+      backdrop.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><h3 style="margin-bottom:12px;">Energy (1-10)</h3><input type="range" min="1" max="10" value="6" id="ar" style="margin-bottom:16px;">
+        <button class="btn btn-primary btn-block" id="as" style="margin-top:16px;">Save Status</button></div>`;
+      document.body.appendChild(backdrop);
+      backdrop.querySelector('#as').onclick = async ()=>{
+        await sSet('energy:'+today()+':'+myRole(), JSON.stringify([{score:document.getElementById('ar').value, ts:Date.now()}]), true);
+        document.body.removeChild(backdrop); pollTick();
+      };
+      backdrop.onclick = (e)=>{ if(e.target===backdrop) document.body.removeChild(backdrop); };
+    });
+
+    document.getElementById('aura-care-btn')?.addEventListener('click', async ()=>{
+      const targetRole = otherRole();
+      await sSet('heartbeat:'+targetRole, JSON.stringify({from: myRole(), ts: Date.now()}), true);
+      showToast(`Sent Heartbeat 💓`);
+    });
+
+    document.getElementById('my-activity-btn')?.addEventListener('click', ()=>{
+      const backdrop = document.createElement('div'); backdrop.className = 'sheet-backdrop';
+      backdrop.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><h3 style="margin-bottom:12px;">What are you up to?</h3><div style="display:flex; flex-wrap:wrap; gap:8px;">${['In Class','Studying','Eating','Sleeping','Driving','Praying','Free'].map(a=>`<button class="btn btn-ghost" style="padding:6px 12px; font-size:13px;" onclick="document.getElementById('ca').value='${a}'">${a}</button>`).join('')}</div><div class="field" style="margin-top:16px;"><input type="text" id="ca" placeholder="Type custom activity..."></div><button class="btn btn-primary btn-block" id="sa">Save</button></div>`;
+      document.body.appendChild(backdrop);
+      backdrop.querySelector('#sa').onclick = async ()=>{ await writeLive({activityLabel: document.getElementById('ca').value.trim(), activityTs: Date.now()}); document.body.removeChild(backdrop); renderApp(); };
+      backdrop.onclick = (e)=>{ if(e.target===backdrop) document.body.removeChild(backdrop); };
+    });
+
+    if(state.tab==='today'){
+      document.getElementById('add-shared-btn').onclick = async ()=>{ const v = document.getElementById('add-shared-input').value.trim(); if(v){ state.routinesShared.push({id:uid(), label:v}); await sSet('routines-shared', JSON.stringify(state.routinesShared), true); renderApp(); } };
+      document.getElementById('add-personal-btn').onclick = async ()=>{ const v = document.getElementById('add-personal-input').value.trim(); if(v){ state.routinesPersonal[myRole()].push({id:uid(), label:v}); await sSet('routines-personal', JSON.stringify(state.routinesPersonal), true); renderApp(); } };
+      document.querySelectorAll('[data-del-shared]').forEach(btn=>btn.onclick = async ()=>{ state.routinesShared = state.routinesShared.filter(r=>r.id!==btn.getAttribute('data-del-shared')); await sSet('routines-shared', JSON.stringify(state.routinesShared), true); renderApp(); });
+      document.querySelectorAll('[data-del-personal]').forEach(btn=>btn.onclick = async ()=>{ state.routinesPersonal[myRole()] = state.routinesPersonal[myRole()].filter(r=>r.id!==btn.getAttribute('data-del-personal')); await sSet('routines-personal', JSON.stringify(state.routinesPersonal), true); renderApp(); });
+      document.querySelectorAll('[data-log]').forEach(btn=>btn.onclick = async ()=>{ const id = btn.getAttribute('data-log'); state.logToday[myRole()][id] = !state.logToday[myRole()][id]; await sSet('routine-log:'+today(), JSON.stringify(state.logToday), true); await computeStreaks(); renderApp(); });
+    }
+    
+    if(state.tab==='play'){
+      const back = document.getElementById('back-to-grid');
+      if(back) back.onclick = ()=>{ state.activeFeature = null; renderApp(); };
+
+      if(!state.activeFeature){
+        document.querySelectorAll('.launcher-btn').forEach(b=>b.onclick = ()=>{ state.activeFeature = b.getAttribute('data-feature'); renderApp(); if(state.activeFeature==='draw') initDrawCanvas(); if(state.activeFeature==='scratch') initScratchCanvas(); });
+      }
+
+      if(state.activeFeature==='quiz'){
+        const sa = document.getElementById('quiz-submit-btn'); if(sa) sa.onclick = async ()=>{ const t = document.getElementById('quiz-answer').value.trim(); if(t){ state.quizToday[myRole()]={text:t}; await sSet('quiz:'+today(), JSON.stringify(state.quizToday), true); renderApp(); }};
+        const sg = document.getElementById('quiz-guess-btn'); if(sg) sg.onclick = async ()=>{ const t = document.getElementById('quiz-guess').value.trim(); if(t){ state.quizToday['guess'+myRole()]={text:t}; await sSet('quiz:'+today(), JSON.stringify(state.quizToday), true); renderApp(); }};
+        const win = document.getElementById('quiz-win-btn'); if(win) win.onclick = async ()=>{ state.quizScores[myRole()]++; await sSet('quiz-scores', JSON.stringify(state.quizScores), true); renderApp(); };
+      }
+      if(state.activeFeature==='decks'){
+        if(!activeDeckId) document.querySelectorAll('[data-deck]').forEach(c=>c.onclick=async ()=>{ activeDeckId = c.getAttribute('data-deck'); deckFlipped=false; renderApp(); });
+        else {
+          document.getElementById('deck-back').onclick = ()=>{ activeDeckId=null; renderApp(); };
+          document.getElementById('flip-front').onclick = ()=>{ deckFlipped=true; document.getElementById('deck-flip').classList.add('flipped'); };
+          const sub = document.getElementById('deck-submit');
+          if(sub) sub.onclick = async ()=>{ const text = document.getElementById('deck-answer').value.trim(); if(!text) return; const key = activeDeckId+':0'; const ans = state.deckAnswers[key] || {}; ans[myRole()] = {text}; await sSet('deckans:'+key, JSON.stringify(ans), true); renderApp(); };
+        }
+      }
+      if(state.activeFeature==='tod'){
+        const dt = document.getElementById('tod-draw-truth'); if(dt) dt.onclick = async ()=>{ const t = {type:'truth', text:TRUTHS_LDR[Math.floor(Math.random()*TRUTHS_LDR.length)], from:myRole(), ts:Date.now()}; await sSet('tod:current', JSON.stringify(t), true); state.tod = t; renderApp(); };
+        const dd = document.getElementById('tod-draw-dare'); if(dd) dd.onclick = async ()=>{ const t = {type:'dare', text:DARES_LDR[Math.floor(Math.random()*DARES_LDR.length)], from:myRole(), ts:Date.now()}; await sSet('tod:current', JSON.stringify(t), true); state.tod = t; renderApp(); };
+        const complete = document.getElementById('tod-complete'); if(complete) complete.onclick = async ()=>{ const n = Object.assign({}, state.tod, {doneBy:(state.tod.doneBy||[]).concat(myRole())}); await sSet('tod:current', JSON.stringify(n), true); state.tod = n; renderApp(); };
+        const newBtn = document.getElementById('tod-new'); if(newBtn) newBtn.onclick = async ()=>{ await sDelete('tod:current', true); state.tod=null; renderApp(); };
+      }
+      if(state.activeFeature==='ttt'){
+        document.querySelectorAll('[data-ttt]').forEach(c=>c.onclick=async ()=>{ const i = parseInt(c.getAttribute('data-ttt'),10); const g = state.games.ttt||{board:Array(9).fill(null), turn:'A'}; if(g.board[i] || g.winner || g.turn!==myRole()) return; g.board[i] = myRole()==='A'?'X':'O'; g.turn = otherRole(); await sSet('game:ttt', JSON.stringify(g), true); renderApp(); });
+        document.querySelector('[data-ttt-reset]').onclick = async ()=>{ await sSet('game:ttt', JSON.stringify({board:Array(9).fill(null), turn:'A'}), true); renderApp(); };
+      }
+      if(state.activeFeature==='c4'){
+        const c4board = document.getElementById('c4-board');
+        if(c4board){ c4board.onclick = (e)=>{ const rect = c4board.getBoundingClientRect(); const col = Math.floor((e.clientX-rect.left) / (rect.width/7)); const g = state.games.c4 || {board:Array(42).fill(null), turn:'A'}; if(g.winner || g.turn!==myRole()) return; const board = g.board.slice(); let row = -1; for(let r=5;r>=0;r--){ if(!board[r*7+col]){ row=r; break; } } if(row<0) return; board[row*7+col] = myRole(); sSet('game:c4', JSON.stringify({board, turn: otherRole()}), true).then(renderApp); }; }
+        document.querySelector('[data-c4-reset]').onclick = async ()=>{ await sSet('game:c4', JSON.stringify({board:Array(42).fill(null), turn:'A'}), true); renderApp(); };
+      }
+      if(state.activeFeature==='draw'){
+        document.querySelectorAll('.swatch').forEach(s=>{ s.onclick = ()=>{ drawColor = s.getAttribute('data-color'); if(drawCtx) drawCtx.strokeStyle = drawColor; document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('active')); s.classList.add('active'); }; });
+        document.getElementById('draw-clear').onclick = async ()=>{ const canvas = document.getElementById('draw-canvas'); const ctx = canvas.getContext('2d'); ctx.fillStyle='#F5F0E8'; ctx.fillRect(0,0,canvas.width,canvas.height); await saveCanvas(); };
+      }
+      if(state.activeFeature==='jar'){
+        document.getElementById('jar-add').onclick = async ()=>{ const text = document.getElementById('jar-note-text').value.trim(); if(text){ const n = {id:uid(), from:myRole(), text, ts:Date.now()}; await sSet('jarnote:'+n.id, JSON.stringify(n), true); const ids = state.jarNotes.map(x=>x.id); ids.unshift(n.id); await sSet('jar-index', JSON.stringify(ids), true); state.jarNotes.unshift(n); renderApp(); } };
+        document.getElementById('jar-pull').onclick = ()=>{
+          if(!state.jarNotes.length){ showToast('Jar is empty'); return; }
+          const n = state.jarNotes[Math.floor(Math.random()*state.jarNotes.length)];
+          const backdrop = document.createElement('div'); backdrop.className = 'sheet-backdrop';
+          backdrop.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><div style="font-size:30px; text-align:center;">🫙</div><div style="font-family:'Fraunces',serif; font-size:19px; line-height:1.4; text-align:center; margin:10px 0;">${escapeHtml(n.text)}</div><div style="color:var(--cream-dim); text-align:center;">— ${escapeHtml(nameFor(n.from))}</div><button class="btn btn-ghost btn-block" id="jar-close" style="margin-top:16px;">Close</button></div>`;
+          document.body.appendChild(backdrop); backdrop.onclick = (e)=>{ if(e.target===backdrop) document.body.removeChild(backdrop); }; backdrop.querySelector('#jar-close').onclick = ()=> document.body.removeChild(backdrop);
+        };
+      }
+      if(state.activeFeature==='scratch'){
+        const sb = document.getElementById('scratch-send');
+        if(sb) sb.onclick = async ()=>{ const text = document.getElementById('scratch-text').value.trim(); if(text){ const payload = {message:text, ts:Date.now()}; await sSet('scratch:'+today()+':'+myRole(), JSON.stringify(payload), true); state.scratchToday[myRole()] = payload; showToast('Card sent 🎟️'); renderApp(); } };
+      }
+      if(state.activeFeature==='bucket'){
+        document.getElementById('add-bucket-btn').onclick = async ()=>{ const v = document.getElementById('add-bucket-input').value.trim(); if(v){ state.bucketList.push({id:uid(), text:v, done:false}); await sSet('bucket-list', JSON.stringify(state.bucketList), true); renderApp(); } };
+        document.querySelectorAll('[data-del-bucket]').forEach(btn=>btn.onclick = async ()=>{ state.bucketList = state.bucketList.filter(r=>r.id!==btn.getAttribute('data-del-bucket')); await sSet('bucket-list', JSON.stringify(state.bucketList), true); renderApp(); });
+        document.querySelectorAll('[data-log-bucket]').forEach(btn=>btn.onclick = async ()=>{ const id = btn.getAttribute('data-log-bucket'); const item = state.bucketList.find(b=>b.id===id); if(item) item.done = !item.done; await sSet('bucket-list', JSON.stringify(state.bucketList), true); renderApp(); });
+      }
+    }
+    
+    if(state.tab==='moments'){
+      document.getElementById('moment-send').onclick = async ()=>{
+        const text = document.getElementById('moment-text').value.trim();
+        if(text){ state.feed.unshift({id:uid(), role:myRole(), text, ts:Date.now()}); await sSet('feed-index', JSON.stringify(state.feed.map(f=>f.id)), true); await sSet('feed:'+state.feed[0].id, JSON.stringify(state.feed[0]), true); renderApp(); }
+      };
+      document.getElementById('memory-vault-btn').onclick = ()=>{ 
+        if(!state.feed.length){ showToast('No memories to pull yet!'); return; }
+        const rand = state.feed[Math.floor(Math.random()*state.feed.length)];
+        const backdrop = document.createElement('div'); backdrop.className = 'ig-cam-backdrop';
+        backdrop.innerHTML = `<h3 style="color:#fff; margin-bottom:16px;">Memory Vault</h3><div style="background:#fff; padding:16px; border-radius:8px; width:80%; text-align:center; color:#111; transform:rotate(${Math.random()*6-3}deg); box-shadow:0 10px 30px rgba(0,0,0,0.8);"><div style="font-size:16px; font-weight:bold; margin-bottom:8px;">${escapeHtml(rand.text)}</div><div style="font-size:12px; color:#666;">— ${escapeHtml(nameFor(rand.role))}, ${new Date(rand.ts).toLocaleDateString()}</div></div><button class="btn btn-ghost" id="close-vault" style="margin-top:24px; color:#fff; border-color:#fff;">Close</button>`;
+        document.body.appendChild(backdrop); backdrop.querySelector('#close-vault').onclick = ()=>document.body.removeChild(backdrop);
+      };
+    }
+    if(state.tab==='settings'){
+      document.getElementById('logout-btn').onclick = ()=>{ localStorage.removeItem('orbit:authed'); location.reload(); };
+      document.getElementById('my-city-find').onclick = async ()=>{
+        const q = document.getElementById('my-city-search').value.trim(); if(!q) return;
+        try{ const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1`); const data = await res.json(); const r = data?.results?.[0]; if(r){ await writeLive({city: r.name, lat: r.latitude, lon: r.longitude, tz: r.timezone}); showToast(`Location updated to ${r.name}`); renderApp(); } }catch(e){}
+      };
+    }
+  }
+
+  async function checkIncomingHeartbeat(){
+    const hb = getJSON(await sGet('heartbeat:'+myRole(), true), null);
+    if(hb && hb.ts > state.lastSeenHeartbeatTs){
+      state.lastSeenHeartbeatTs = hb.ts;
+      await sSet('heartbeat-seen:'+myRole(), String(hb.ts), true);
+      if(navigator.vibrate) navigator.vibrate([100, 100, 100, 100]); // Haptic Heartbeat
+      const hEl = document.createElement('div'); hEl.className = 'giant-heart'; hEl.textContent = '💓';
+      hEl.style.animation = 'heartbeatAnim 1.5s forwards'; document.body.appendChild(hEl);
+      setTimeout(()=>hEl.remove(), 1500);
+    }
+  }
+
+  async function writeLive(patch){
+    const next = Object.assign({}, state.profile[myRole()], patch, {ts: Date.now()});
+    await sSet('live:'+myRole(), JSON.stringify(next), true); state.profile[myRole()] = next;
+  }
+  async function reportPresence(){
+    if(!('getBattery' in navigator)) return;
+    try{ const batt = await navigator.getBattery(); const send = ()=> writeLive({battery: Math.round(batt.level*100), charging: batt.charging}); send(); batt.onlevelchange = send; batt.onchargingchange = send; }catch(e){}
+  }
+
+  async function pollTick(){ await loadAll(); await checkIncomingHeartbeat(); renderApp(); }
+  function showToast(msg){ const t = document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2600); }
+
+  boot();
+})();
+</script>
+</body>
+</html>

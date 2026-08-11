@@ -23,7 +23,6 @@
     --rose:#E8879C;
     --rose-2:#F2A6B8;
     --sage:#8FBC94;
-    --sky:#7EC8E3;
     --line:rgba(245,240,232,0.10);
     --line-2:rgba(245,240,232,0.16);
     --glass-bg:linear-gradient(155deg, rgba(58,52,94,0.45), rgba(28,26,48,0.45));
@@ -52,8 +51,10 @@
   h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; margin:0;}
   p{margin:0;}
 
+  .ring-card, .routine-item, .composer, .feed-item, .settings-block, .profile-card, .deck-card, .qcard, .tod-card, .draw-wrap, .quiz-card, .gift-card, .jar-note, .letter-card, .capsule-card, .countdown-card, .map-card{ transition:transform .28s var(--ease-pop), box-shadow .28s ease, border-color .28s ease; will-change:transform; }
+  
   .btn, .nudge-btn, .icon-btn, .sync-fab, .activity-chip-btn, .chip-pick, .tab, .swatch, .check, .cheer-chip, .inline-del, .launcher-btn{ transition:transform .18s var(--ease-pop), box-shadow .22s ease, background .22s ease, border-color .22s ease, filter .22s ease; cursor:pointer;}
-  .btn:active, .activity-chip-btn:active, .launcher-btn:active{ transform:scale(0.95); }
+  .btn:active, .activity-chip-btn:active, .launcher-btn:active, .sync-fab:active{ transform:scale(0.95); }
   .btn-primary{ background:linear-gradient(135deg, var(--gold-2), var(--gold) 55%, #D9954A); box-shadow:0 6px 20px rgba(227,168,87,0.35), 0 0 0 1px rgba(255,255,255,0.12) inset; color:#20160A; border-radius:14px; padding:14px 18px; font-weight:600; border:none;}
   .btn-primary:hover{ filter:brightness(1.08); transform:translateY(-1px); }
   .btn-ghost{ background:rgba(245,240,232,0.04); backdrop-filter:blur(10px); color:var(--cream-dim); border:1px solid var(--line-2); border-radius:14px; padding:14px 18px; font-weight:600;}
@@ -70,6 +71,8 @@
   /* --- Top Bar & Layout --- */
   .topbar{display:flex; align-items:center; justify-content:space-between; padding:16px 20px 4px;}
   .brand{font-family:'Fraunces',serif; font-size:16px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold);}
+  .sync-fab{background:var(--plum); border:1px solid var(--line-2); color:var(--gold); cursor:pointer; padding:6px; font-size:16px; border-radius:10px; line-height:1;}
+  .sync-fab:hover{ box-shadow:0 0 0 4px rgba(227,168,87,0.14), 0 6px 16px rgba(227,168,87,0.25); filter:brightness(1.15); }
   .content{flex:1; padding:0 20px 120px; overflow-y:auto;}
   .section-title{font-size:19px; margin-bottom:4px; margin-top:10px;}
   .section-sub{color:var(--cream-dim); font-size:13px; margin-bottom:14px;}
@@ -92,11 +95,14 @@
   .profile-row{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--cream-dim); margin-top:5px; justify-content:center;}
   .profile-visuals{display:flex; justify-content:center; gap:16px; margin:2px 0 8px;}
   .mini-orb-wrap{ position:relative; width:58px; height:58px; }
+  .clock-face-wrap-sm{ position:relative; width:58px; height:58px; }
+  .clock-face-wrap-sm .weather-badge{ right:-6px; bottom:-4px; padding:1px 5px; font-size:9.5px; position:absolute; background:var(--ink-2); border:1px solid var(--glass-border); border-radius:999px; font-weight:600; box-shadow:0 4px 10px rgba(0,0,0,0.4); }
   .profile-visual-label{ font-size:10.5px; color:var(--cream-dim); text-align:center; white-space:nowrap; }
   .profile-meta{ text-align:center; font-size:11.5px; color:var(--cream-dim); margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px; flex-wrap:wrap; }
   .aura-tag-inline{ color:var(--cream); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; font-size:11px; }
   .profile-actions{display:flex; gap:6px; margin-top:10px;}
   .profile-actions > button{flex:1; font-size:11px; padding:7px 6px; white-space:normal; line-height:1.25; background:rgba(245,240,232,0.08); border:1px solid var(--line-2); color:var(--cream); border-radius:10px; cursor:pointer;}
+  .activity-chip-btn.set{border-color:var(--gold); color:var(--gold);}
   .care-btn{ margin-top:8px; width:100%; border:none; border-radius:10px; padding:8px 10px; font-size:12px; cursor:pointer; font-weight:700; background:linear-gradient(120deg, var(--rose-2), var(--rose) 60%, #B968D6); color:#2A0E17; box-shadow:0 4px 14px rgba(232,135,156,0.35); }
   .status-divider{ width:26px; flex:none; display:flex; align-items:center; justify-content:center; position:relative; }
   .status-divider::before{ content:''; position:absolute; top:14%; bottom:14%; left:50%; width:1px; background:linear-gradient(180deg, transparent, var(--line-2) 25%, var(--gold) 50%, var(--line-2) 75%, transparent); opacity:0.55; }
@@ -114,6 +120,11 @@
   .ring-visual{ position:relative; width:76px; height:76px; }
   .ring-pct{font-family:'Fraunces',serif; font-size:20px; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); margin:0; line-height:1;}
   .streak-badge{font-size:11px; color:var(--gold); display:flex; align-items:center; gap:4px;}
+
+  /* --- QOTD --- */
+  .qotd-banner{ background:linear-gradient(150deg, rgba(151,99,214,0.22), rgba(227,168,87,0.14)); border:1px solid var(--glass-border); border-radius:20px; padding:18px; margin-bottom:20px; }
+  .qotd-badge{ font-size:11px; font-weight:700; text-transform:uppercase; color:var(--gold); }
+  .qotd-text{ font-family:'Fraunces',serif; font-size:18px; line-height:1.4; margin-top:8px;}
 
   /* --- Editable To-Do Lists --- */
   .routine-item{ display:flex; align-items:center; gap:10px; background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:12px 14px; margin-bottom:10px; box-shadow:var(--glass-shadow); }
@@ -135,6 +146,7 @@
   /* --- IG Style Floating Instant Camera Widget --- */
   .ig-floating-cam { position: fixed; right: -5px; bottom: 110px; width: 65px; height: 80px; background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.2); border-right: none; border-radius: 40px 0 0 40px; box-shadow: -6px 6px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:flex-start; padding-left: 8px; z-index: 90; cursor: pointer; transition: transform 0.2s var(--ease-pop), width 0.2s ease; overflow: hidden; backdrop-filter:var(--glass-blur); }
   .ig-floating-cam:hover { transform: translateX(-5px); width: 75px; }
+  .ig-floating-cam:active { transform: scale(0.95); }
   .ig-cam-icon-bg { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--rose), var(--gold)); display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 10px rgba(227,168,87,0.4); padding: 2px; }
   .ig-cam-icon-inner { width: 100%; height: 100%; background: var(--ink); border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 18px; }
   .ig-cam-dot { position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 8px var(--rose); animation: pulse 1.5s infinite; }
@@ -164,7 +176,31 @@
   .c4-board{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; max-width:320px; margin:0 auto 14px; background:linear-gradient(160deg, var(--plum-2), var(--plum)); padding:8px; border-radius:14px; }
   .c4-cell{aspect-ratio:1; border-radius:50%; background:rgba(20,18,36,0.55); cursor:pointer; display:flex; align-items:center; justify-content:center;}
 
+  /* Stories / Hearts */
+  .feed-hearts{margin-top:8px; font-size:12.5px; color:var(--rose); display:flex; align-items:center; gap:4px;}
+  .heart-pop{ position:absolute; top:50%; left:50%; font-size:64px; transform:translate(-50%,-50%) scale(0.3); opacity:0; animation:heartPop .85s var(--ease-pop) forwards; pointer-events:none; filter:drop-shadow(0 4px 14px rgba(0,0,0,0.5)); }
+  @keyframes heartPop{ 0%{ transform:translate(-50%,-50%) scale(0.3); opacity:0; } 30%{ transform:translate(-50%,-50%) scale(1.15); opacity:1; } 55%{ transform:translate(-50%,-50%) scale(0.95); opacity:1; } 100%{ transform:translate(-50%,-50%) scale(1.05); opacity:0; } }
+  .stories-row{display:flex; gap:12px; overflow-x:auto; padding:2px 2px 14px; margin-bottom:4px;}
+  .story-item{flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; width:62px;}
+  .story-ring{width:58px; height:58px; border-radius:50%; padding:2.5px; background:linear-gradient(135deg, var(--gold-2), var(--rose) 55%, #B968D6); transition:transform .2s var(--ease-pop);}
+  .story-item:active .story-ring{transform:scale(0.92);}
+  .story-thumb{width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; border:2.5px solid var(--ink);}
+  .story-label{font-size:10px; color:var(--cream-dim); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:62px;}
+  .story-viewer{ position:fixed; inset:0; z-index:600; background:#000; display:flex; flex-direction:column; animation:storyFadeIn .25s ease; }
+  @keyframes storyFadeIn{ from{opacity:0;} to{opacity:1;} }
+
   .gift-card, .jar-note, .letter-card, .capsule-card, .feed-item, .composer, .settings-block, .qcard, .tod-card, .draw-wrap{ background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:var(--glass-shadow); backdrop-filter:var(--glass-blur);}
+  .feed-photo-wrap{position:relative; margin-top:10px; border-radius:12px; overflow:hidden; user-select:none; -webkit-user-select:none;}
+  .feed-photo-wrap img{width:100%; border-radius:12px; display:block;}
+  .cheer-quick{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .cheer-chip{background:var(--plum); border:1px solid var(--line-2); color:var(--cream); border-radius:999px; padding:6px 12px; font-size:13px; cursor:pointer;}
+
+  /* Sync Tap */
+  .synctap-stage{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px; gap:26px;}
+  .synctap-circle{ width:170px; height:170px; border-radius:50%; background:var(--plum); border:2px solid var(--line-2); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--cream-dim); user-select:none; cursor:pointer; text-align:center; }
+  .synctap-circle.pressing{border-color:var(--gold); background:var(--plum-2);}
+  .synctap-circle.synced{border-color:var(--gold); background:radial-gradient(circle, rgba(227,168,87,0.35), var(--plum-2)); animation:syncedpop 0.5s ease;}
+  @keyframes syncedpop{0%{transform:scale(1);}40%{transform:scale(1.08);}100%{transform:scale(1);}}
   
   .sheet-backdrop{ position:fixed; inset:0; background:rgba(10,9,20,0.6); backdrop-filter:blur(2px); display:flex; align-items:flex-end; justify-content:center; z-index:700; animation:backdropFadeIn .25s ease; }
   .sheet{ width:100%; max-width:480px; background:var(--ink-2); border-top:1px solid var(--line-2); border-radius:22px 22px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom,0)); transform-origin:bottom center; box-shadow:0 -10px 40px rgba(0,0,0,0.5); }
@@ -298,6 +334,7 @@ try{
   function timeAgo(ts){ const s = Math.floor((Date.now()-ts)/1000); if(s<60) return 'just now'; if(s<3600) return Math.floor(s/60)+'m ago'; if(s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function emptyHtml(emo, title, sub){ return `<div class="empty"><div class="e-emo">${emo}</div><div class="e-title">${title}</div><div class="section-sub">${sub}</div></div>`; }
   
   /* Distance calculation */
   function getDistanceKm(lat1, lon1, lat2, lon2) {
@@ -312,10 +349,11 @@ try{
   function energyTierColors(score){ const t = energyTier(score); if(t==='low') return {a:'#4B5385', b:'#232249', accent:'#8890C7'}; if(t==='balanced') return {a:'#E3A857', b:'#5A4A8A', accent:'#F0C382'}; return {a:'#E8879C', b:'#9763D6', accent:'#F2A6B8'}; }
 
   const QUIZ_QUESTIONS = [
-    "What's my go-to comfort food?", "What's my favorite surah to listen to?", "What's the first thing I do when I wake up?",
+    "What's my go-to comfort food?", "What's my favorite memory of us?", "What's the first thing I do when I wake up?",
     "What's a small thing that instantly annoys me?", "What's my dream trip destination?", "What's my biggest pet peeve about texting?"
   ];
 
+  let activeDeckId = null, deckFlipped = false;
   const DECKS = [
     {id:'deep', name:'Deep Talks', emo:'🌊', questions:[
       "What's something you've never told anyone but would tell me?", "What does a truly good life look like to you, ten years from now?",
@@ -354,18 +392,18 @@ try{
     "Text me a paragraph in the most dramatic, over-the-top romantic language you can.", "Send a photo of exactly what's in front of you right now, no cleaning up first.",
     "Record yourself explaining why you love me using only your hands, no talking.", "Do 10 push-ups on camera right now and send proof."
   ];
-
-  const DRAW_COLORS = ['#20160A','#E3A857','#E8879C','#8FBC94','#7EC8E3','#F5F0E8'];
-  let activeDeckId = null, deckFlipped = false;
+  
+  const CHEER_PRESETS = ['Proud of you 💛','You got this','Miss you 🫶','So close, keep going'];
+  const LETTER_CATEGORIES = ["Open when you can't sleep","Open when you miss me","Open when you're stressed about exams","Open when you need a reminder of us","Open when you feel far away","Open on a hard day","Custom…"];
 
   const state = {
     identity: null, couple: null, tab: 'today', activeFeature: null,
     routinesShared: [], routinesPersonal: {A:[], B:[]}, logToday: {A:{}, B:{}}, streaks: {A:0, B:0},
-    bucketList: [], feed: [], profile: {A:null, B:null}, weather: {A:null, B:null},
+    bucketList: [], feed: [], profile: {A:null, B:null}, weather: {A:null, B:null}, meetup: null,
     deckCurrent: {}, deckAnswers: {}, tod: null, games: {ttt:null, c4:null}, canvas: null, quizToday: null, quizScores: {A:0, B:0},
     giftboxes: [], jarNotes: [], scratchToday: {A:null, B:null}, letters: [], capsules: [],
     energyToday: {A:[], B:[]}, lastSeenHeartbeatTs: 0, customDecks: [], customTod: {truths:[], dares:[]}, qotd: null,
-    instantIncoming: null, instantSent: null
+    instantIncoming: null, instantSent: null, instantPendingPhoto: null, instantDrawerOpen: false, syncTapOpen: false
   };
 
   const app = document.getElementById('app');
@@ -399,18 +437,13 @@ try{
       renderApp();
       reportPresence();
     } catch(err) {
-      console.error("Boot error: ", err);
       renderLogin();
     }
   }
 
   async function loadAll(){
     state.routinesShared = getJSON(await sGet('routines-shared', true), [{id:'quran', label:'Read Quran'}]);
-    
-    const defaultPersonal = {
-      A: [{id:uid(), label:'Study Economics'}, {id:uid(), label:'Reach 2500 rapid rating in chess (10 hours/week) ♟️'}],
-      B: []
-    };
+    const defaultPersonal = { A: [{id:uid(), label:'Study Economics'}, {id:uid(), label:'Reach 2500 rapid rating in chess (10 hours/week) ♟️'}], B: [] };
     state.routinesPersonal = getJSON(await sGet('routines-personal', true), defaultPersonal);
     state.logToday = getJSON(await sGet('routine-log:'+today(), true), {A:{}, B:{}});
     
@@ -419,11 +452,18 @@ try{
       {id:uid(), text:'Adopt another kitten 🐾', done:false},
       {id:uid(), text:'Play a chess marathon ♟️', done:false}
     ]);
+    state.meetup = getJSON(await sGet('meetup-config', true), null);
 
     await computeStreaks();
     
     state.profile.A = getJSON(await sGet('live:A', true), null);
     state.profile.B = getJSON(await sGet('live:B', true), null);
+    
+    // Ensure default city
+    if(!state.profile[myRole()] || !state.profile[myRole()].city) {
+        await writeLive({city:'Addis Ababa', lat:9.0192, lon:38.7525, tz:'Africa/Addis_Ababa'});
+    }
+
     state.energyToday.A = getJSON(await sGet('energy:'+today()+':A', true), []);
     state.energyToday.B = getJSON(await sGet('energy:'+today()+':B', true), []);
     
@@ -431,6 +471,8 @@ try{
     const items = [];
     for(const id of feedIds.slice(0,30)){ const item = getJSON(await sGet('feed:'+id, true), null); if(item) items.push(item); }
     state.feed = items.sort((a,b)=>b.ts-a.ts);
+
+    await loadQotd();
 
     state.quizToday = getJSON(await sGet('quiz:'+today(), true), {question: QUIZ_QUESTIONS[quizDateIndex()]});
     state.quizScores = getJSON(await sGet('quiz-scores', true), {A:0, B:0});
@@ -478,7 +520,12 @@ try{
 
   function renderApp(){
     app.innerHTML = `
-      <div class="topbar"><div class="brand">Orbit</div></div>
+      <div class="topbar">
+        <div class="brand">Orbit</div>
+        <div style="display:flex; gap:6px;">
+          <button class="sync-fab" id="sync-tap-open" title="Sync tap">◎</button>
+        </div>
+      </div>
       <div class="content" id="content"></div>
       
       <div class="bottom-nav">
@@ -518,7 +565,7 @@ try{
       <div class="profile-name">${escapeHtml(nameFor(role))}${isMe?' <span style="color:var(--cream-dim);font-weight:400;">(you)</span>':''}</div>
       <div class="profile-visuals"><div class="profile-visual-col"><div class="mini-orb-wrap">${auraOrbSvg(score, 58)}</div><div class="profile-visual-label">${score!=null?score+'/10':'No status'}</div></div></div>
       <div class="profile-meta">${score!=null ? `<span class="aura-tag-inline">${escapeHtml(entry.tag)}</span>`:''} ${p&&p.city?`<span>${escapeHtml(p.city)}</span>`:''} ${battChip}</div>
-      ${isMe ? `<div class="profile-actions"><button id="aura-set-btn">Set Status</button><button id="my-activity-btn">${act?escapeHtml(act):"Activity"}</button></div>` 
+      ${isMe ? `<div class="profile-actions"><button class="btn btn-ghost" id="aura-set-btn">Set Status</button><button class="btn btn-ghost" id="my-activity-btn">${act?escapeHtml(act):"Activity"}</button></div>` 
              : `<div class="profile-row">${act?`💬 <b>${escapeHtml(act)}</b>`:'No status'}</div><button class="care-btn" id="aura-care-btn">💓 Send Heartbeat</button>`}
     </div>`;
   }
@@ -572,6 +619,8 @@ try{
       </div>
       
       ${mapCardHtml()}
+      ${countdownHtml()}
+      ${qotdBannerHtml()}
 
       <div class="section-title">Our Shared Routine</div>
       ${sharedHtml || '<div class="section-sub">No shared tasks.</div>'}
@@ -590,6 +639,8 @@ try{
     const mapEl = document.getElementById('live-map');
     if(!mapEl || !window.L) return;
     const pA = state.profile.A, pB = state.profile.B;
+    
+    // Default to Addis Ababa if no coords exist anywhere
     let lat = 9.0192, lon = 38.7525, zoom = 2; 
 
     if (pA?.lat && pB?.lat) { lat = (pA.lat + pB.lat) / 2; lon = (pA.lon + pB.lon) / 2; zoom = 3; }
@@ -606,6 +657,90 @@ try{
     if(pB?.lat) L.marker([pB.lat, pB.lon], {icon: myRole()==='B'?goldIcon:roseIcon}).addTo(map);
 
     if(pA?.lat && pB?.lat) L.polyline([[pA.lat, pA.lon], [pB.lat, pB.lon]], {color: 'rgba(255,255,255,0.2)', weight: 2, dashArray: '4, 6'}).addTo(map);
+  }
+
+  function countdownHtml(){
+    if(!state.meetup || !state.meetup.targetTs){
+      return `<div class="countdown-card"><div class="countdown-label">Next reunion</div>
+        <div style="color:var(--cream-dim); font-size:13.5px; margin-bottom:10px;">No date set yet.</div>
+        <button class="btn btn-primary" id="set-meetup-btn" style="display:inline-flex;">Set the date</button></div>`;
+    }
+    const diff = state.meetup.targetTs - Date.now();
+    if(diff<=0){
+      return `<div class="countdown-card"><div class="countdown-label">🎉 Reunion day</div><div style="font-family:'Fraunces',serif;font-size:18px;">Today's the day.</div>
+        <button class="countdown-edit" id="set-meetup-btn">Set a new date</button></div>`;
+    }
+    const days = Math.floor(diff/86400000);
+    const hours = Math.floor((diff%86400000)/3600000);
+    const mins = Math.floor((diff%3600000)/60000);
+    return `<div class="countdown-card">
+      <div class="countdown-label">Until you're together again</div>
+      <div class="countdown-nums">
+        <div class="countdown-unit"><b>${days}</b><span>days</span></div>
+        <div class="countdown-unit"><b>${hours}</b><span>hrs</span></div>
+        <div class="countdown-unit"><b>${mins}</b><span>min</span></div>
+      </div>
+      <button class="countdown-edit" id="set-meetup-btn">Change date</button>
+    </div>`;
+  }
+  function openMeetupEditor(){
+    const backdrop = document.createElement('div');
+    backdrop.className = 'sheet-backdrop';
+    const cur = state.meetup && state.meetup.targetTs ? new Date(state.meetup.targetTs) : null;
+    const dVal = cur ? fmtDate(cur) : '';
+    const tVal = cur ? `${String(cur.getHours()).padStart(2,'0')}:${String(cur.getMinutes()).padStart(2,'0')}` : '18:00';
+    backdrop.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <h3 style="margin-bottom:14px;">When do you next meet?</h3>
+        <div class="field"><label>Date</label><input type="text" id="meetup-date" placeholder="YYYY-MM-DD" value="${dVal}"></div>
+        <div class="field"><label>Time</label><input type="time" id="meetup-time" value="${tVal}"></div>
+        <button class="btn btn-primary btn-block" id="meetup-save">Save</button>
+      </div>`;
+    document.body.appendChild(backdrop);
+    backdrop.onclick = (e)=>{ if(e.target===backdrop) document.body.removeChild(backdrop); };
+    backdrop.querySelector('#meetup-save').onclick = async ()=>{
+      const dStr = document.getElementById('meetup-date').value.trim();
+      const tStr = document.getElementById('meetup-time').value || '18:00';
+      const target = new Date(`${dStr}T${tStr}:00`);
+      if(!dStr || isNaN(target.getTime())) return;
+      state.meetup = {targetTs: target.getTime()};
+      await sSet('meetup-config', JSON.stringify(state.meetup), true);
+      document.body.removeChild(backdrop);
+      renderApp();
+    };
+  }
+
+  function qotdPickForToday(){
+    const d = new Date(today()); const dayNum = Math.floor(d.getTime()/86400000); const pool = [];
+    DECKS.forEach(deck=>{ deck.questions.forEach((q,i)=>{ pool.push({catId:deck.id, qIndex:i, question:q, emo:deck.emo, catName:deck.name}); }); });
+    return pool[dayNum % pool.length];
+  }
+  async function loadQotd(){
+    const q = getJSON(await sGet('qotd:'+today(), true), null);
+    if(!q){ const picked = qotdPickForToday(); state.qotd = {catId:picked.catId, qIndex:picked.qIndex, question:picked.question, emo:picked.emo, catName:picked.catName, A:null, B:null}; }
+    else { state.qotd = q; }
+  }
+  async function saveQotdAnswer(text){
+    const q = state.qotd; q[myRole()] = {text, ts:Date.now()};
+    await sSet('qotd:'+today(), JSON.stringify(q), true); renderApp();
+  }
+  function qotdBannerHtml(){
+    const q = state.qotd; if(!q) return '';
+    const mine = q[myRole()], theirs = q[otherRole()], bothIn = mine && theirs;
+    return `<div class="qotd-banner" id="qotd-banner">
+      <div class="qotd-head"><span class="qotd-badge">${q.emo} Question of the Day</span></div>
+      <div class="qotd-text">${escapeHtml(q.question)}</div>
+      ${bothIn ? `<div class="qotd-answers"><div style="margin-top:10px; background:var(--plum); padding:10px; border-radius:10px;"><b>${escapeHtml(nameFor(myRole()))}</b><br>${escapeHtml(mine.text)}</div><div style="margin-top:10px; background:var(--plum); padding:10px; border-radius:10px;"><b>${escapeHtml(nameFor(otherRole()))}</b><br>${escapeHtml(theirs.text)}</div></div>` 
+               : mine ? `<div class="section-sub" style="margin-top:10px;">Waiting on ${escapeHtml(nameFor(otherRole()))}…</div>` 
+                      : `<button class="btn btn-primary" id="qotd-answer-btn" style="margin-top:10px;">Answer today's question</button>`}
+    </div>`;
+  }
+  function openQotdAnswerModal(){
+    const q = state.qotd; const backdrop = document.createElement('div'); backdrop.className = 'sheet-backdrop';
+    backdrop.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><div class="qcard-cat">${q.emo} Question of the Day</div><div style="font-family:'Fraunces',serif; font-size:18px; margin-bottom:14px;">${escapeHtml(q.question)}</div><textarea id="qotd-answer-text" placeholder="Your honest answer…" style="min-height:100px; margin-bottom:12px;"></textarea><button class="btn btn-primary btn-block" id="qotd-answer-save">Submit answer</button></div>`;
+    document.body.appendChild(backdrop); backdrop.onclick = (e)=>{ if(e.target===backdrop) document.body.removeChild(backdrop); };
+    backdrop.querySelector('#qotd-answer-save').onclick = async ()=>{ const text = document.getElementById('qotd-answer-text').value.trim(); if(text){ await saveQotdAnswer(text); document.body.removeChild(backdrop); } };
   }
 
   /* --- IG Style Floating Camera --- */
@@ -647,6 +782,54 @@ try{
   }
 
   function wireFloatingLayer(){ const fab = document.getElementById('ig-fab'); if(fab) fab.onclick = renderInstantModal; }
+
+  let syncTapHandle = null;
+  function openSyncTap(){
+    state.syncTapOpen = true;
+    const backdrop = document.createElement('div');
+    backdrop.className = 'sheet-backdrop';
+    backdrop.style.alignItems = 'stretch';
+    backdrop.innerHTML = `
+      <div class="app" style="background:var(--ink); min-height:100vh; width:100%;">
+        <div class="topbar"><div class="brand">Sync Tap</div><button class="icon-btn" id="synctap-close">✕</button></div>
+        <div class="synctap-stage">
+          <div class="synctap-circle" id="synctap-circle">Hold down<br>at the same time</div>
+          <div class="synctap-status" id="synctap-status">Both hold down together to feel it sync.</div>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const circle = backdrop.querySelector('#synctap-circle');
+    const statusEl = backdrop.querySelector('#synctap-status');
+    let pressing = false, lastWrite = 0;
+    async function setPressing(v){
+      pressing = v;
+      circle.classList.toggle('pressing', v);
+      const now = Date.now();
+      if(now-lastWrite>400 || !v){ lastWrite = now; await sSet('synctap:'+myRole(), JSON.stringify({pressing:v, ts:now}), true); }
+    }
+    circle.onpointerdown = ()=> setPressing(true);
+    circle.onpointerup = ()=> setPressing(false);
+    circle.onpointerleave = ()=> setPressing(false);
+    backdrop.querySelector('#synctap-close').onclick = async ()=>{
+      state.syncTapOpen = false;
+      if(syncTapHandle) clearInterval(syncTapHandle);
+      await sSet('synctap:'+myRole(), JSON.stringify({pressing:false, ts:Date.now()}), true);
+      document.body.removeChild(backdrop);
+    };
+    syncTapHandle = setInterval(async ()=>{
+      const raw = await sGet('synctap:'+otherRole(), true);
+      const other = getJSON(raw, null);
+      const otherFresh = other && other.pressing && (Date.now()-other.ts < 1800);
+      if(pressing && otherFresh){
+        circle.classList.add('synced');
+        statusEl.textContent = `In sync with ${nameFor(otherRole())} 💛`;
+        if(navigator.vibrate) navigator.vibrate([40,30,40]);
+      } else {
+        circle.classList.remove('synced');
+        statusEl.textContent = other && other.pressing ? `${nameFor(otherRole())} is holding too — keep still` : `Both hold down together to feel it sync.`;
+      }
+    }, 700);
+  }
 
   /* --- EXPLORE TAB (Grid App Launcher) --- */
   function playHtml(){
@@ -690,6 +873,63 @@ try{
     `;
   }
 
+  function getAllDecks(){ return DECKS.concat(state.customDecks || []); }
+  async function loadCustomDecks(){
+    const idxRaw = await sGet('custom-decks-index', true);
+    const ids = getJSON(idxRaw, []);
+    const items = [];
+    for(const id of ids){ const raw = await sGet('custom-deck:'+id, true); const item = getJSON(raw, null); if(item) items.push(item); }
+    state.customDecks = items;
+  }
+  async function createCustomDeck(name, emo, questions){
+    const deck = {id:'custom-'+uid(), name: name.trim()||'Our Deck', emo: emo.trim()||'✨', questions: questions.map(q=>q.trim()).filter(Boolean)};
+    await sSet('custom-deck:'+deck.id, JSON.stringify(deck), true);
+    const idxRaw = await sGet('custom-decks-index', true);
+    const ids = getJSON(idxRaw, []); ids.unshift(deck.id);
+    await sSet('custom-decks-index', JSON.stringify(ids), true);
+    state.customDecks.unshift(deck); return deck;
+  }
+  async function addQuestionToCustomDeck(deckId, question){
+    const deck = state.customDecks.find(d=>d.id===deckId); if(!deck || !question.trim()) return;
+    deck.questions.push(question.trim()); await sSet('custom-deck:'+deckId, JSON.stringify(deck), true);
+  }
+  function openCreateDeckModal(){
+    const backdrop = document.createElement('div'); backdrop.className = 'sheet-backdrop';
+    backdrop.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><h3 style="margin-bottom:12px;">Create a custom card deck</h3><div class="field"><label>Deck name</label><input type="text" id="new-deck-name" placeholder="e.g. Inside Jokes"></div><div class="field"><label>Emoji</label><input type="text" id="new-deck-emo" placeholder="✨" maxlength="4" style="width:70px;"></div><div class="field"><label>Questions — one per line</label><textarea id="new-deck-questions" style="min-height:120px;"></textarea></div><button class="btn btn-primary btn-block" id="new-deck-save">Create deck</button></div>`;
+    document.body.appendChild(backdrop); backdrop.onclick = (e)=>{ if(e.target===backdrop) document.body.removeChild(backdrop); };
+    backdrop.querySelector('#new-deck-save').onclick = async ()=>{
+      const name = document.getElementById('new-deck-name').value.trim(); const emo = document.getElementById('new-deck-emo').value.trim(); const lines = document.getElementById('new-deck-questions').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      if(!name || !lines.length) return;
+      await createCustomDeck(name, emo, lines); document.body.removeChild(backdrop); showToast('Custom deck created ✨'); renderApp();
+    };
+  }
+  function openAddQuestionModal(){
+    const deck = getAllDecks().find(d=>d.id===activeDeckId); if(!deck || !deck.id.startsWith('custom-')) return;
+    const backdrop = document.createElement('div'); backdrop.className = 'sheet-backdrop';
+    backdrop.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><h3 style="margin-bottom:12px;">Add a question to ${escapeHtml(deck.name)}</h3><textarea id="add-q-text" placeholder="Your new question…"></textarea><button class="btn btn-primary btn-block" id="add-q-save" style="margin-top:10px;">Add to deck</button></div>`;
+    document.body.appendChild(backdrop); backdrop.onclick = (e)=>{ if(e.target===backdrop) document.body.removeChild(backdrop); };
+    backdrop.querySelector('#add-q-save').onclick = async ()=>{ const text = document.getElementById('add-q-text').value.trim(); if(!text) return; await addQuestionToCustomDeck(deck.id, text); document.body.removeChild(backdrop); showToast('Question added'); renderApp(); };
+  }
+
+  async function loadCustomTod(){ state.customTod = getJSON(await sGet('custom-tod', true), {truths:[], dares:[]}); }
+  async function addCustomTod(truths, dares){
+    const cur = getJSON(await sGet('custom-tod', true), {truths:[], dares:[]});
+    cur.truths = cur.truths.concat(truths.map(t=>t.trim()).filter(Boolean));
+    cur.dares = cur.dares.concat(dares.map(t=>t.trim()).filter(Boolean));
+    await sSet('custom-tod', JSON.stringify(cur), true); state.customTod = cur;
+  }
+  function openAddCustomTodModal(){
+    const backdrop = document.createElement('div'); backdrop.className = 'sheet-backdrop';
+    backdrop.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><h3 style="margin-bottom:12px;">Add your own Truths &amp; Dares</h3><div class="field"><label>Truths — one per line</label><textarea id="custom-truths" style="min-height:90px;"></textarea></div><div class="field"><label>Dares — one per line</label><textarea id="custom-dares" style="min-height:90px;"></textarea></div><button class="btn btn-primary btn-block" id="custom-tod-save">Add to pool</button></div>`;
+    document.body.appendChild(backdrop); backdrop.onclick = (e)=>{ if(e.target===backdrop) document.body.removeChild(backdrop); };
+    backdrop.querySelector('#custom-tod-save').onclick = async ()=>{
+      const truths = document.getElementById('custom-truths').value.split('\n'); const dares = document.getElementById('custom-dares').value.split('\n');
+      const tCount = truths.map(s=>s.trim()).filter(Boolean).length; const dCount = dares.map(s=>s.trim()).filter(Boolean).length;
+      if(!tCount && !dCount) return;
+      await addCustomTod(truths, dares); document.body.removeChild(backdrop); showToast('Added to pool 🎴'); renderApp();
+    };
+  }
+
   function quizDateIndex(){ return Math.floor(new Date(today()).getTime()/86400000) % QUIZ_QUESTIONS.length; }
   function quizHtml(){
     const q = state.quizToday || {question: QUIZ_QUESTIONS[quizDateIndex()]};
@@ -709,17 +949,18 @@ try{
     </div>`;
   }
 
-  function deckListHtml(){ return `<div class="deck-grid">${DECKS.map(d=>`<div class="deck-card" data-deck="${d.id}"><div class="deck-stack-layer l2"></div><div class="deck-stack-layer l1"></div><div class="deck-stack-top"><div class="deck-emo">${d.emo}</div><div class="deck-name">${escapeHtml(d.name)}</div></div></div>`).join('')}</div>`; }
+  function deckListHtml(){ return `<div class="deck-grid">${getAllDecks().map(d=>`<div class="deck-card" data-deck="${d.id}"><div class="deck-stack-layer l2"></div><div class="deck-stack-layer l1"></div><div class="deck-stack-top"><div class="deck-emo">${d.emo}</div><div class="deck-name">${escapeHtml(d.name)}</div></div></div>`).join('')}<div class="deck-card" id="create-deck-btn" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(245,240,232,0.03);border:1.5px dashed var(--line-2);"><div style="font-size:30px;color:var(--gold);">+</div><div>Custom Deck</div></div></div>`; }
   function deckQuestionHtml(){
-    const deck = DECKS.find(d=>d.id===activeDeckId); const qi = (state.deckCurrent[deck.id]||{}).qIndex||0; const q = deck.questions[qi]; const ans = state.deckAnswers[deck.id+':'+qi] || {};
+    const deck = getAllDecks().find(d=>d.id===activeDeckId); const qi = (state.deckCurrent[deck.id]||{}).qIndex||0; const q = deck.questions[qi]; const ans = state.deckAnswers[deck.id+':'+qi] || {};
     return `
-    <button class="btn-ghost btn" id="deck-back" style="margin-bottom:10px;">← Back</button>
+    <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><button class="btn-ghost btn" id="deck-back">← Back</button>${deck.id.startsWith('custom-') ? `<button class="btn-ghost btn" id="deck-add-question">+ Add Q</button>`:''}</div>
     <div class="flip-card ${deckFlipped?'flipped':''}" id="deck-flip">
       <div class="flip-inner">
         <div class="flip-front" id="flip-front"><div class="flip-deck-emo">${deck.emo}</div><div class="flip-tap-hint">✨ Tap to reveal</div></div>
         <div class="flip-back qcard"><div class="qcard-text">${escapeHtml(q)}</div>
         ${ans[myRole()] && ans[otherRole()] ? `<div class="qcard-answer" style="margin-bottom:10px;"><b>${escapeHtml(nameFor(myRole()))}</b><br>${escapeHtml(ans[myRole()].text)}</div><div class="qcard-answer"><b>${escapeHtml(nameFor(otherRole()))}</b><br>${escapeHtml(ans[otherRole()].text)}</div>` 
         : ans[myRole()] ? `Waiting on ${escapeHtml(nameFor(otherRole()))}...` : `<textarea id="deck-answer" placeholder="Answer..." style="border-radius:12px; margin-bottom:10px;"></textarea><button class="btn btn-primary btn-block" id="deck-submit">Submit</button>`}
+        <div style="display:flex; justify-content:space-between; margin-top:14px;"><button class="btn btn-ghost" id="deck-prev" ${qi===0?'disabled':''}>◀ Prev</button><button class="btn btn-ghost" id="deck-next" ${qi>=deck.questions.length-1?'disabled':''}>Next ▶</button></div>
         </div>
       </div>
     </div>`;
@@ -727,7 +968,7 @@ try{
 
   function todHtml(){
     const t = state.tod;
-    if(!t) return `<div style="display:flex; gap:16px; margin-top:22px;"><div class="tod-deck" style="flex:1;"><div class="tod-deck-card truth-back" id="tod-draw-truth"><div class="tod-deck-mark">🌊</div><div class="tod-deck-label">Draw a Truth</div></div></div><div class="tod-deck" style="flex:1;"><div class="tod-deck-card dare-back" id="tod-draw-dare"><div class="tod-deck-mark">🔥</div><div class="tod-deck-label">Draw a Dare</div></div></div></div>`;
+    if(!t) return `<div style="display:flex; gap:16px; margin-top:22px;"><div class="tod-deck" style="flex:1;"><div class="tod-deck-card truth-back" id="tod-draw-truth"><div class="tod-deck-mark">🌊</div><div class="tod-deck-label">Draw a Truth</div></div></div><div class="tod-deck" style="flex:1;"><div class="tod-deck-card dare-back" id="tod-draw-dare"><div class="tod-deck-mark">🔥</div><div class="tod-deck-label">Draw a Dare</div></div></div></div><button class="btn btn-ghost btn-block" id="tod-add-custom" style="margin-top:18px;">+ Add custom Truths/Dares</button>`;
     const iDone = (t.doneBy||[]).includes(myRole());
     return `<div class="tod-card" id="tod-card-el"><div class="tod-type ${t.type}">${t.type}</div><div class="tod-text">${escapeHtml(t.text)}</div><div class="section-sub" style="margin-top:12px;">Drawn by ${escapeHtml(nameFor(t.from))}</div></div><button class="btn btn-primary btn-block" id="tod-complete" ${iDone?'disabled':''}>${iDone?'Done ✓':'Mark done'}</button><button class="btn btn-ghost btn-block" id="tod-new" style="margin-top:10px;">Draw new</button>`;
   }
@@ -769,12 +1010,67 @@ try{
     `;
   }
 
+  function feedItemHtml(f){
+    const heartedBy = f.heartedBy || []; const heartLabel = heartedBy.length===0 ? '' : heartedBy.length===1 ? (heartedBy[0]===myRole() ? 'You liked this' : escapeHtml(nameFor(heartedBy[0]))+' liked this') : 'You both liked this';
+    return `<div class="feed-item">
+      <div class="feed-head"><span class="feed-author">${escapeHtml(nameFor(f.role))}</span><span class="feed-time">${timeAgo(f.ts)}</span></div>
+      ${f.text?`<div class="feed-text">${escapeHtml(f.text)}</div>`:''}
+      ${f.photo?`<div class="feed-photo-wrap" data-feed-id="${f.id}"><img src="${f.photo}" alt=""></div>`:''}
+      ${heartLabel?`<div class="feed-hearts">❤️ ${heartLabel}</div>`:''}
+    </div>`;
+  }
+  function storiesRowHtml(){
+    const photoItems = state.feed.filter(f=>f.photo).slice(0,15);
+    if(!photoItems.length) return '';
+    return `<div class="stories-row">${photoItems.map((f,i)=>`<div class="story-item" data-story-idx="${i}"><div class="story-ring"><img src="${f.photo}" class="story-thumb"></div><div class="story-label">${f.role===myRole()?'You':escapeHtml(nameFor(f.role))}</div></div>`).join('')}</div>`;
+  }
+  function openStoryViewer(startIdx){
+    const items = state.feed.filter(f=>f.photo).slice(0,15); if(!items.length) return;
+    let idx = Math.max(0, Math.min(startIdx, items.length-1));
+    const overlay = document.createElement('div'); overlay.className = 'story-viewer'; document.body.appendChild(overlay);
+    function render(){
+      const f = items[idx];
+      overlay.innerHTML = `<div class="story-progress">${items.map((_,i)=>`<div class="story-progress-seg ${i<=idx?'seen':''}"></div>`).join('')}</div><div class="story-top"><span>${escapeHtml(nameFor(f.role))}</span><span class="story-time">${timeAgo(f.ts)}</span><button class="story-close" id="story-close">✕</button></div><img src="${f.photo}" class="story-img">${f.text?`<div class="story-caption">${escapeHtml(f.text)}</div>`:''}<div class="story-nav-left" id="story-prev"></div><div class="story-nav-right" id="story-next"></div>`;
+      overlay.querySelector('#story-close').onclick = ()=>document.body.removeChild(overlay);
+      overlay.querySelector('#story-prev').onclick = ()=>{ if(idx>0){ idx--; render(); } };
+      overlay.querySelector('#story-next').onclick = ()=>{ if(idx<items.length-1){ idx++; render(); } else document.body.removeChild(overlay); };
+    } render();
+  }
+
+  function triggerHeartPop(container){
+    const heart = document.createElement('div'); heart.className = 'heart-pop'; heart.textContent = '❤️';
+    container.appendChild(heart); setTimeout(()=>heart.remove(), 900);
+  }
+  function patchFeedHeartDisplay(wrapEl, heartedBy){
+    const feedItem = wrapEl.closest('.feed-item'); if(!feedItem) return;
+    let heartsDiv = feedItem.querySelector('.feed-hearts');
+    const label = heartedBy.length===0 ? '' : heartedBy.length===1 ? (heartedBy[0]===myRole() ? 'You liked this' : escapeHtml(nameFor(heartedBy[0]))+' liked this') : 'You both liked this';
+    if(!heartsDiv && label){ heartsDiv = document.createElement('div'); heartsDiv.className = 'feed-hearts'; feedItem.appendChild(heartsDiv); }
+    if(heartsDiv) heartsDiv.innerHTML = `❤️ ${label}`;
+  }
+  async function toggleHeartFeedItem(id, wrapEl){
+    const idx = state.feed.findIndex(f=>f.id===id); if(idx<0) return;
+    const item = state.feed[idx]; const heartedBy = (item.heartedBy || []).slice();
+    if(!heartedBy.includes(myRole())){ heartedBy.push(myRole()); state.feed[idx] = Object.assign({}, item, {heartedBy}); patchFeedHeartDisplay(wrapEl, heartedBy); }
+    const stored = getJSON(await sGet('feed:'+id, true), null);
+    if(!stored) return; stored.heartedBy = stored.heartedBy || [];
+    if(!stored.heartedBy.includes(myRole())) stored.heartedBy.push(myRole());
+    await sSet('feed:'+id, JSON.stringify(stored), true);
+  }
+  let lastFeedTapTs = {};
+  function handleFeedPhotoTap(id, el){
+    const now = Date.now(), last = lastFeedTapTs[id] || 0; lastFeedTapTs[id] = now;
+    if(now - last < 350){ lastFeedTapTs[id] = 0; triggerHeartPop(el); toggleHeartFeedItem(id, el); }
+  }
+
   /* --- Moments Tab (with Memory Vault) --- */
   function momentsHtml(){
     return `
+      ${storiesRowHtml()}
       <div class="composer"><textarea id="moment-text" placeholder="Drop a note..."></textarea><button class="btn btn-primary btn-block" id="moment-send">Post</button></div>
       <button class="btn btn-ghost btn-block" id="memory-vault-btn" style="margin-bottom:16px;">🕰️ Time Machine (Random Memory)</button>
-      ${state.feed.map(f=>`<div class="feed-item"><div style="font-weight:bold; margin-bottom:6px;">${escapeHtml(nameFor(f.role))} <span style="font-weight:normal; font-size:11px; color:var(--cream-dim)">· ${timeAgo(f.ts)}</span></div>${escapeHtml(f.text)}</div>`).join('')}
+      <div class="section-sub" style="margin:-4px 0 12px; text-align:center;">Double-tap a photo to like it ❤️</div>
+      ${state.feed.map(feedItemHtml).join('') || emptyHtml('📷','No moments yet','Post the first photo or note.')}
     `;
   }
 
@@ -816,6 +1112,8 @@ try{
   }
 
   function wireTabEvents(){
+    document.getElementById('sync-tap-open')?.addEventListener('click', openSyncTap);
+
     document.getElementById('aura-set-btn')?.addEventListener('click', ()=>{
       const backdrop = document.createElement('div'); backdrop.className = 'sheet-backdrop';
       backdrop.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><h3 style="margin-bottom:12px;">Energy (1-10)</h3><input type="range" min="1" max="10" value="6" id="ar" style="margin-bottom:16px;">
@@ -848,6 +1146,8 @@ try{
       document.querySelectorAll('[data-del-shared]').forEach(btn=>btn.onclick = async ()=>{ state.routinesShared = state.routinesShared.filter(r=>r.id!==btn.getAttribute('data-del-shared')); await sSet('routines-shared', JSON.stringify(state.routinesShared), true); renderApp(); });
       document.querySelectorAll('[data-del-personal]').forEach(btn=>btn.onclick = async ()=>{ state.routinesPersonal[myRole()] = state.routinesPersonal[myRole()].filter(r=>r.id!==btn.getAttribute('data-del-personal')); await sSet('routines-personal', JSON.stringify(state.routinesPersonal), true); renderApp(); });
       document.querySelectorAll('[data-log]').forEach(btn=>btn.onclick = async ()=>{ const id = btn.getAttribute('data-log'); state.logToday[myRole()][id] = !state.logToday[myRole()][id]; await sSet('routine-log:'+today(), JSON.stringify(state.logToday), true); await computeStreaks(); renderApp(); });
+      const meetupBtn = document.getElementById('set-meetup-btn'); if(meetupBtn) meetupBtn.onclick = openMeetupEditor;
+      const qotdBtn = document.getElementById('qotd-answer-btn'); if(qotdBtn) qotdBtn.onclick = openQotdAnswerModal;
     }
     
     if(state.tab==='play'){
@@ -855,7 +1155,7 @@ try{
       if(back) back.onclick = ()=>{ state.activeFeature = null; renderApp(); };
 
       if(!state.activeFeature){
-        document.querySelectorAll('.launcher-btn').forEach(b=>b.onclick = ()=>{ state.activeFeature = b.getAttribute('data-feature'); renderApp(); if(state.activeFeature==='draw') initDrawCanvas(); if(state.activeFeature==='scratch') initScratchCanvas(); });
+        document.querySelectorAll('.launcher-btn').forEach(b=>b.onclick = async ()=>{ state.activeFeature = b.getAttribute('data-feature'); renderApp(); if(state.activeFeature==='draw') initDrawCanvas(); if(state.activeFeature==='scratch') initScratchCanvas(); if(state.activeFeature==='decks'){ await loadCustomDecks(); } if(state.activeFeature==='tod'){ await loadCustomTod(); } });
       }
 
       if(state.activeFeature==='quiz'){
@@ -864,19 +1164,22 @@ try{
         const win = document.getElementById('quiz-win-btn'); if(win) win.onclick = async ()=>{ state.quizScores[myRole()]++; await sSet('quiz-scores', JSON.stringify(state.quizScores), true); renderApp(); };
       }
       if(state.activeFeature==='decks'){
+        const createBtn = document.getElementById('create-deck-btn'); if(createBtn) createBtn.onclick = openCreateDeckModal;
         if(!activeDeckId) document.querySelectorAll('[data-deck]').forEach(c=>c.onclick=async ()=>{ activeDeckId = c.getAttribute('data-deck'); deckFlipped=false; renderApp(); });
         else {
           document.getElementById('deck-back').onclick = ()=>{ activeDeckId=null; renderApp(); };
           document.getElementById('flip-front').onclick = ()=>{ deckFlipped=true; document.getElementById('deck-flip').classList.add('flipped'); };
           const sub = document.getElementById('deck-submit');
           if(sub) sub.onclick = async ()=>{ const text = document.getElementById('deck-answer').value.trim(); if(!text) return; const key = activeDeckId+':0'; const ans = state.deckAnswers[key] || {}; ans[myRole()] = {text}; await sSet('deckans:'+key, JSON.stringify(ans), true); renderApp(); };
+          const addQBtn = document.getElementById('deck-add-question'); if(addQBtn) addQBtn.onclick = openAddQuestionModal;
         }
       }
       if(state.activeFeature==='tod'){
-        const dt = document.getElementById('tod-draw-truth'); if(dt) dt.onclick = async ()=>{ const t = {type:'truth', text:TRUTHS_LDR[Math.floor(Math.random()*TRUTHS_LDR.length)], from:myRole(), ts:Date.now()}; await sSet('tod:current', JSON.stringify(t), true); state.tod = t; renderApp(); };
-        const dd = document.getElementById('tod-draw-dare'); if(dd) dd.onclick = async ()=>{ const t = {type:'dare', text:DARES_LDR[Math.floor(Math.random()*DARES_LDR.length)], from:myRole(), ts:Date.now()}; await sSet('tod:current', JSON.stringify(t), true); state.tod = t; renderApp(); };
+        const dt = document.getElementById('tod-draw-truth'); if(dt) dt.onclick = async ()=>{ const pool = TRUTHS_LDR.concat(state.customTod.truths||[]); const t = {type:'truth', text:pool[Math.floor(Math.random()*pool.length)], from:myRole(), ts:Date.now()}; await sSet('tod:current', JSON.stringify(t), true); state.tod = t; renderApp(); };
+        const dd = document.getElementById('tod-draw-dare'); if(dd) dd.onclick = async ()=>{ const pool = DARES_LDR.concat(state.customTod.dares||[]); const t = {type:'dare', text:pool[Math.floor(Math.random()*pool.length)], from:myRole(), ts:Date.now()}; await sSet('tod:current', JSON.stringify(t), true); state.tod = t; renderApp(); };
         const complete = document.getElementById('tod-complete'); if(complete) complete.onclick = async ()=>{ const n = Object.assign({}, state.tod, {doneBy:(state.tod.doneBy||[]).concat(myRole())}); await sSet('tod:current', JSON.stringify(n), true); state.tod = n; renderApp(); };
         const newBtn = document.getElementById('tod-new'); if(newBtn) newBtn.onclick = async ()=>{ await sDelete('tod:current', true); state.tod=null; renderApp(); };
+        const addCustomBtn = document.getElementById('tod-add-custom'); if(addCustomBtn) addCustomBtn.onclick = openAddCustomTodModal;
       }
       if(state.activeFeature==='ttt'){
         document.querySelectorAll('[data-ttt]').forEach(c=>c.onclick=async ()=>{ const i = parseInt(c.getAttribute('data-ttt'),10); const g = state.games.ttt||{board:Array(9).fill(null), turn:'A'}; if(g.board[i] || g.winner || g.turn!==myRole()) return; g.board[i] = myRole()==='A'?'X':'O'; g.turn = otherRole(); await sSet('game:ttt', JSON.stringify(g), true); renderApp(); });
@@ -913,6 +1216,8 @@ try{
     }
     
     if(state.tab==='moments'){
+      document.querySelectorAll('.feed-photo-wrap').forEach(el=>{ el.onclick = ()=> handleFeedPhotoTap(el.getAttribute('data-feed-id'), el); });
+      document.querySelectorAll('.story-item').forEach(el=>{ el.onclick = ()=> openStoryViewer(parseInt(el.getAttribute('data-story-idx'),10)); });
       document.getElementById('moment-send').onclick = async ()=>{
         const text = document.getElementById('moment-text').value.trim();
         if(text){ state.feed.unshift({id:uid(), role:myRole(), text, ts:Date.now()}); await sSet('feed-index', JSON.stringify(state.feed.map(f=>f.id)), true); await sSet('feed:'+state.feed[0].id, JSON.stringify(state.feed[0]), true); renderApp(); }
@@ -921,7 +1226,7 @@ try{
         if(!state.feed.length){ showToast('No memories to pull yet!'); return; }
         const rand = state.feed[Math.floor(Math.random()*state.feed.length)];
         const backdrop = document.createElement('div'); backdrop.className = 'ig-cam-backdrop';
-        backdrop.innerHTML = `<h3 style="color:#fff; margin-bottom:16px;">Memory Vault</h3><div style="background:#fff; padding:16px; border-radius:8px; width:80%; text-align:center; color:#111; transform:rotate(${Math.random()*6-3}deg); box-shadow:0 10px 30px rgba(0,0,0,0.8);"><div style="font-size:16px; font-weight:bold; margin-bottom:8px;">${escapeHtml(rand.text)}</div><div style="font-size:12px; color:#666;">— ${escapeHtml(nameFor(rand.role))}, ${new Date(rand.ts).toLocaleDateString()}</div></div><button class="btn btn-ghost" id="close-vault" style="margin-top:24px; color:#fff; border-color:#fff;">Close</button>`;
+        backdrop.innerHTML = `<h3 style="color:#fff; margin-bottom:16px;">Memory Vault</h3><div style="background:#fff; padding:16px; border-radius:8px; width:80%; text-align:center; color:#111; transform:rotate(${Math.random()*6-3}deg); box-shadow:0 10px 30px rgba(0,0,0,0.8);"><div style="font-size:16px; font-weight:bold; margin-bottom:8px;">${escapeHtml(rand.text||'A special moment')}</div><div style="font-size:12px; color:#666;">— ${escapeHtml(nameFor(rand.role))}, ${new Date(rand.ts).toLocaleDateString()}</div></div><button class="btn btn-ghost" id="close-vault" style="margin-top:24px; color:#fff; border-color:#fff;">Close</button>`;
         document.body.appendChild(backdrop); backdrop.querySelector('#close-vault').onclick = ()=>document.body.removeChild(backdrop);
       };
     }

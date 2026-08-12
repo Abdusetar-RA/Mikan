@@ -183,6 +183,9 @@
     display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; color:var(--cream-dim); }
   .nudge-btn:active{transform:scale(0.9);}
   .nudge-btn.sent{border-style:solid; border-color:var(--gold); color:var(--gold);}
+  .cheer-item-btn{ width:30px; height:30px; border-radius:9px; border:1.5px dashed var(--line-2); background:none; flex:none;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; color:var(--cream-dim); }
+  .cheer-item-btn:active{transform:scale(0.9);}
 
   .composer{background:var(--glass-bg); border:1px solid var(--glass-border); box-shadow:var(--glass-shadow); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border-radius:16px; padding:12px; margin-bottom:18px;}
   .composer textarea{resize:none; min-height:52px; margin-bottom:10px;}
@@ -625,7 +628,7 @@ const firebaseConfig = {
 // section "Set your two accounts" for how to change this safely.
 const ALLOWED_USERS = {
   "abdu@orbit.com":  { role: "A", name: "Abdusetar" },
-  "ilham@orbit.com":  { role: "B", name: "Ilham" },
+  "Iluye@orbit.com":  { role: "B", name: "Ilham" },
 };
 
 let appFirebase = null, db = null, auth = null, firebaseReady = false;
@@ -787,13 +790,15 @@ try{
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); return Math.round(R * c);
   }
 
-  const DEFAULT_ROUTINES = [
+  const DEFAULT_ROUTINES_SHARED = [
     {id:'quran', label:'Quran', icon:'🕌', time:'12:30'},
-    {id:'water', label:'Drink water', icon:'💧', time:'10:00'},
-    {id:'eat', label:'Eat properly', icon:'🍽️', time:'13:30'},
-    {id:'exercise', label:'Exercise', icon:'🏃', time:'18:00'},
-    {id:'study', label:'Study / read', icon:'📚', time:'20:00'},
     {id:'call', label:'Call each other', icon:'📞', time:'22:00'},
+  ];
+  const DEFAULT_ROUTINES_PERSONAL = [
+    {id:'water', label:'Drink water'},
+    {id:'eat', label:'Eat properly'},
+    {id:'exercise', label:'Exercise'},
+    {id:'study', label:'Study / read'},
   ];
   const ICON_CHOICES = ['✨','🕌','💧','🍽️','🏃','📚','📞','🧘','☀️','🌙','📖','💊','🚿','🛏️'];
   const CHEER_PRESETS = ['Proud of you 💛','You got this','Miss you 🫶','So close, keep going'];
@@ -1074,6 +1079,17 @@ try{
     ]},
   ];
 
+  /* ---------------- Endless deck questions ----------------
+     No prototype actually had a working "pull more questions from the
+     internet" feature — I checked all of them. There's also no free,
+     reliable API for couple/relationship questions to pull from live.
+     Instead: once you pass the last hand-written question in a deck,
+     this generates new ones by combining openers + topics from a bank
+     for that deck's category. It's seeded from deck id + question index,
+     so you and your partner always see the exact same generated question
+     at the same position — it never needs to be written to the database.
+     If you'd rather have real AI-generated questions instead of templated
+     ones, see the README section "Swap in AI-generated questions". */
   function mulberry32(seedStr){
     let h = 1779033703 ^ seedStr.length;
     for(let i=0;i<seedStr.length;i++){
@@ -1177,7 +1193,10 @@ try{
 
   const state = {
     identity: null, couple: null, tab: 'today', subtab: {play:'decks', gifts:'boxes'},
-    routines: DEFAULT_ROUTINES.slice(), logToday: {A:{}, B:{}}, streaks: {A:0, B:0},
+    routinesShared: DEFAULT_ROUTINES_SHARED.slice(),
+    routinesPersonal: {A: DEFAULT_ROUTINES_PERSONAL.map(r=>({...r})), B: DEFAULT_ROUTINES_PERSONAL.map(r=>({...r}))},
+    routineHistory: {A:[], B:[]},
+    logToday: {A:{}, B:{}}, streaks: {A:0, B:0},
     feed: [], pendingPhoto: null, notifOn: false, sheetOpen: false, knownFeedIds: new Set(), nudgedToday: {},
     bucketList: [],
     profile: {A:null, B:null}, presence: {A:null, B:null}, activity: {A:null, B:null}, weather: {A:null, B:null}, meetup: null,
@@ -1271,7 +1290,8 @@ try{
       const nameB = (names.find(n=>n.role==='B')||{}).name || 'B';
       state.couple = {nameA, nameB, createdAt: Date.now()};
       await sSet('couple-config', JSON.stringify(state.couple), true);
-      await sSet('routines-config', JSON.stringify(DEFAULT_ROUTINES), true);
+      await sSet('routines-shared', JSON.stringify(DEFAULT_ROUTINES_SHARED), true);
+      await sSet('routines-personal', JSON.stringify({A: DEFAULT_ROUTINES_PERSONAL.map(r=>({...r})), B: DEFAULT_ROUTINES_PERSONAL.map(r=>({...r}))}), true);
     }
     const seenRaw = await sGet('care-seen:'+myRole(), true);
     state.lastSeenCareTs = parseInt(getJSON(seenRaw, '0'), 10) || 0;
@@ -1287,16 +1307,19 @@ try{
   }
 
   async function loadAll(){
-    const [routinesRaw, logRaw, notifRaw] = await Promise.all([
-      sGet('routines-config', true),
+    const [sharedRaw, personalRaw, logRaw, notifRaw] = await Promise.all([
+      sGet('routines-shared', true),
+      sGet('routines-personal', true),
       sGet('routine-log:'+today(), true),
       sGet('notif-on', false),
     ]);
-    state.routines = getJSON(routinesRaw, DEFAULT_ROUTINES);
+    state.routinesShared = getJSON(sharedRaw, DEFAULT_ROUTINES_SHARED);
+    state.routinesPersonal = getJSON(personalRaw, {A: DEFAULT_ROUTINES_PERSONAL.slice(), B: DEFAULT_ROUTINES_PERSONAL.slice()});
     const log = getJSON(logRaw, {A:{}, B:{}});
     state.logToday = {A: log.A||{}, B: log.B||{}};
     state.notifOn = !!getJSON(notifRaw, false);
     await computeStreaks();
+    await loadRoutineHistory();
     await loadFeed();
     await loadLiveAndMeetup();
     await ensureDefaultCity();
@@ -1354,6 +1377,7 @@ try{
       await sSet('care-seen:'+myRole(), String(c.ts), true);
       triggerCareBurst();
       announce(`${nameFor(otherRole())} sent you care 💛`);
+      try{ if('vibrate' in navigator) navigator.vibrate([90,60,90]); }catch(e){}
     }
   }
   function triggerCareBurst(){
@@ -1938,22 +1962,61 @@ try{
     }catch(e){}
   }
 
+  function allRoutinesFor(role){
+    return state.routinesShared.concat(state.routinesPersonal[role]||[]);
+  }
   async function computeStreaks(){
     for(const role of ['A','B']){
       let streak = 0;
       let d = new Date(); d.setDate(d.getDate()-1);
+      const all = allRoutinesFor(role);
       for(let i=0;i<60;i++){
         const raw = await sGet('routine-log:'+fmtDate(d), true);
         const log = getJSON(raw, null);
         if(!log) break;
         const done = log[role] || {};
-        const total = state.routines.length;
-        const doneCount = state.routines.filter(r=>done[r.id]).length;
+        const total = all.length;
+        const doneCount = all.filter(r=>done[r.id]).length;
         if(total>0 && doneCount===total){ streak++; d.setDate(d.getDate()-1); }
         else break;
       }
       state.streaks[role] = streak;
     }
+  }
+  // Builds the last-14-days completion % per person for the trend graph.
+  // Uses each day's own routine set where available so past days aren't
+  // unfairly judged against routines added/removed later.
+  async function loadRoutineHistory(){
+    const days = 14;
+    const dates = [];
+    for(let i=days-1;i>=0;i--){ const dt=new Date(); dt.setDate(dt.getDate()-i); dates.push(fmtDate(dt)); }
+    const rawList = await Promise.all(dates.map(d=>sGet('routine-log:'+d, true)));
+    const hist = {A:[], B:[]};
+    rawList.forEach(raw=>{
+      const log = getJSON(raw, {A:{}, B:{}});
+      for(const role of ['A','B']){
+        const all = allRoutinesFor(role);
+        const total = all.length;
+        const done = all.filter(r=>(log[role]||{})[r.id]).length;
+        hist[role].push(total>0 ? Math.round(done/total*100) : 0);
+      }
+    });
+    state.routineHistory = hist;
+  }
+  function routineHistoryChartSvg(){
+    const w=300, h=86, pad=6;
+    const histA = state.routineHistory.A||[], histB = state.routineHistory.B||[];
+    const n = Math.max(histA.length, histB.length, 1);
+    const stepX = (w-pad*2)/Math.max(n-1,1);
+    const y = v => (h-pad) - (v/100)*(h-pad*2);
+    const pathFor = hist => hist.map((v,i)=>`${i===0?'M':'L'} ${(pad+i*stepX).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+    const dotsFor = (hist,color) => hist.map((v,i)=>`<circle cx="${(pad+i*stepX).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.6" fill="${color}"/>`).join('');
+    return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="overflow:visible;">
+      <path d="${pathFor(histA)}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${pathFor(histB)}" fill="none" stroke="var(--rose)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${dotsFor(histA,'var(--gold)')}
+      ${dotsFor(histB,'var(--rose)')}
+    </svg>`;
   }
 
   async function loadFeed(){
@@ -2187,9 +2250,10 @@ try{
   }
 
   function pct(role){
-    const total = state.routines.length;
+    const all = allRoutinesFor(role);
+    const total = all.length;
     if(total===0) return 0;
-    const done = state.routines.filter(r=>state.logToday[role][r.id]).length;
+    const done = all.filter(r=>state.logToday[role][r.id]).length;
     return Math.round(done/total*100);
   }
   function ringSvg(percent, color){
@@ -2205,8 +2269,8 @@ try{
   }
 
   function todayHtml(){
-    const sorted = state.routines.slice().sort((a,b)=> (a.time||'').localeCompare(b.time||''));
-    const rows = sorted.map(r=>{
+    const sharedSorted = state.routinesShared.slice().sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+    const sharedRows = sharedSorted.map(r=>{
       const mineDone = !!state.logToday[myRole()][r.id];
       const theirsDone = !!state.logToday[otherRole()][r.id];
       const nudgeKey = today()+':'+r.id;
@@ -2222,7 +2286,29 @@ try{
           <div class="routine-time">${r.time || ''} · ${nameFor(otherRole())} ${theirsDone?'done':'not yet'}</div>
         </div>
         ${rightControl}
-        <div class="check mine ${mineDone?'done':''}" data-id="${r.id}">${mineDone?'✓':''}</div>
+        <div class="check mine ${mineDone?'done':''}" data-log="${r.id}">${mineDone?'✓':''}</div>
+      </div>`;
+    }).join('');
+
+    const myPersonal = state.routinesPersonal[myRole()] || [];
+    const myPersonalRows = myPersonal.map(r=>{
+      const done = !!state.logToday[myRole()][r.id];
+      return `
+      <div class="routine-item">
+        <div class="routine-mid"><div class="routine-label">${escapeHtml(r.label)}</div></div>
+        <button class="inline-del" data-del-personal="${r.id}" title="Remove">✕</button>
+        <div class="check mine ${done?'done':''}" data-log="${r.id}">${done?'✓':''}</div>
+      </div>`;
+    }).join('');
+
+    const theirsPersonal = state.routinesPersonal[otherRole()] || [];
+    const theirsPersonalRows = theirsPersonal.map(r=>{
+      const done = !!state.logToday[otherRole()][r.id];
+      return `
+      <div class="routine-item">
+        <div class="routine-mid"><div class="routine-label" style="${done?'':'color:var(--cream-dim);'}">${escapeHtml(r.label)}</div></div>
+        ${done ? `<button class="cheer-item-btn" data-cheer-item="${escapeHtml(r.label)}" title="Cheer ${escapeHtml(nameFor(otherRole()))}">👏</button>` : ''}
+        <div class="check theirs ${done?'done':''}">${done?'✓':''}</div>
       </div>`;
     }).join('');
 
@@ -2241,9 +2327,26 @@ try{
           <div class="streak-badge">🔥 ${state.streaks[otherRole()]} day streak</div>
         </div>
       </div>
-      <div class="section-title">Today's routine</div>
+      <div class="section-title">Last 14 days</div>
+      <div class="ring-card" style="padding:14px 16px; align-items:stretch;">
+        ${routineHistoryChartSvg()}
+        <div style="display:flex; gap:14px; margin-top:6px; font-size:11.5px; color:var(--cream-dim);">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:4px;"></span>${escapeHtml(nameFor('A'))}</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--rose);margin-right:4px;"></span>${escapeHtml(nameFor('B'))}</span>
+        </div>
+      </div>
+      ${mapCardHtml()}
+      <div class="section-title">Our shared goals</div>
       <div class="section-sub">Tap your box to mark it done. Tap 👋 to nudge them if they haven't yet.</div>
-      ${rows || emptyHtml('🌱','No routines yet','Add your first one in Settings.')}
+      ${sharedRows || emptyHtml('🌱','No shared goals yet','Add one in Settings.')}
+
+      <div class="section-title">${escapeHtml(nameFor(myRole()))}'s list</div>
+      ${myPersonalRows || `<div class="section-sub">Nothing yet — add your own goals below.</div>`}
+      <div class="inline-add"><input type="text" id="add-personal-input" placeholder="Add something just for you..."><button class="btn btn-primary" id="add-personal-btn">+</button></div>
+
+      <div class="section-title">${escapeHtml(nameFor(otherRole()))}'s list</div>
+      <div class="section-sub">Tap 👏 to cheer them on when they finish something.</div>
+      ${theirsPersonalRows || `<div class="section-sub">${escapeHtml(nameFor(otherRole()))} hasn't added anything yet.</div>`}
     `;
   }
 
@@ -2420,6 +2523,7 @@ try{
   const PLAY_SUBTABS = [
     {id:'decks', label:'Question Decks'}, {id:'tod', label:'Truth or Dare'},
     {id:'games', label:'Mini-Games'}, {id:'draw', label:'Draw'}, {id:'quiz', label:'Daily Quiz'},
+    {id:'bucket', label:'Bucket List'}, {id:'breathe', label:'Breathe'},
   ];
   let activeDeckId = null;
   let deckFlipped = false;
@@ -2433,6 +2537,8 @@ try{
     else if(sub==='games') body = gamesHtml();
     else if(sub==='draw') body = drawHtml();
     else if(sub==='quiz') body = quizHtml();
+    else if(sub==='bucket') body = bucketListHtml();
+    else if(sub==='breathe') body = breatheHtml();
     return nav + body;
   }
 
@@ -2787,6 +2893,83 @@ try{
     renderApp();
   }
 
+  /* ---------------- Bucket List ---------------- */
+  function bucketListHtml() {
+    return `
+      <div class="section-title">Our Bucket List ✈️</div>
+      <div class="section-sub">Dreams, trips, and late-night ideas for the future.</div>
+      <div class="inline-add"><input type="text" id="add-bucket-input" placeholder="Add a shared goal..."><button class="btn btn-primary" id="add-bucket-btn">+</button></div>
+      ${state.bucketList.length ? state.bucketList.map(b=>`<div class="routine-item"><div class="routine-mid"><div class="routine-label" style="${b.done?'text-decoration:line-through; color:var(--cream-dim);':''}">${escapeHtml(b.text)}</div></div><button class="inline-del" data-del-bucket="${b.id}">✕</button><div class="check mine ${b.done?'done':''}" data-log-bucket="${b.id}">${b.done?'✓':''}</div></div>`).join('') : emptyHtml('✈️','Nothing on the list yet','Add your first shared dream above.')}
+    `;
+  }
+  async function saveBucketList(){
+    await sSet('bucket-list', JSON.stringify(state.bucketList), true);
+  }
+  async function addBucketItem(text){
+    text = text.trim();
+    if(!text) return;
+    state.bucketList.unshift({id:uid(), text, done:false});
+    await saveBucketList();
+    renderApp();
+  }
+  async function toggleBucketItem(id){
+    const item = state.bucketList.find(b=>b.id===id);
+    if(!item) return;
+    item.done = !item.done;
+    await saveBucketList();
+    renderApp();
+  }
+  async function deleteBucketItem(id){
+    state.bucketList = state.bucketList.filter(b=>b.id!==id);
+    await saveBucketList();
+    renderApp();
+  }
+
+  /* ---------------- Breathe together ---------------- */
+  function breatheHtml() {
+    return `
+      <div class="section-title" style="text-align:center; margin-top:20px;">Sync Breathe</div>
+      <div class="section-sub" style="text-align:center;">Breathe together. Open this anytime you feel overwhelmed.</div>
+      <div class="breathe-container">
+        <div class="breathe-circle"></div>
+        <div class="breathe-text" style="position:absolute;">Inhale…</div>
+      </div>
+    `;
+  }
+
+  /* ---------------- Live map ---------------- */
+  function mapCardHtml() {
+    const pA = state.profile.A, pB = state.profile.B;
+    let distBadge = '';
+    if (pA && pB && pA.lat && pA.lon && pB.lat && pB.lon) {
+      const dist = getDistanceKm(pA.lat, pA.lon, pB.lat, pB.lon);
+      if(dist > 0) distBadge = `<div class="map-distance-badge">${dist} km apart</div>`;
+    }
+    return `<div class="section-title" style="margin-top:10px;">Our World</div><div class="map-card">${distBadge}<div id="live-map"></div></div>`;
+  }
+  let liveMapInstance = null;
+  function initMap() {
+    const mapEl = document.getElementById('live-map');
+    if(!mapEl || !window.L) return;
+    if(liveMapInstance){ liveMapInstance.remove(); liveMapInstance = null; }
+    const pA = state.profile.A, pB = state.profile.B;
+    let lat = 9.0192, lon = 38.7525, zoom = 2;
+    if (pA?.lat && pB?.lat) { lat = (pA.lat + pB.lat) / 2; lon = (pA.lon + pB.lon) / 2; zoom = 3; }
+    else if (pA?.lat) { lat = pA.lat; lon = pA.lon; zoom = 5; }
+    else if (pB?.lat) { lat = pB.lat; lon = pB.lon; zoom = 5; }
+
+    const map = L.map('live-map', {zoomControl: false, dragging:false, scrollWheelZoom:false}).setView([lat, lon], zoom);
+    liveMapInstance = map;
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
+
+    const goldIcon = L.divIcon({className: 'custom-icon', html: `<div style="width:12px;height:12px;background:var(--gold);border-radius:50%;box-shadow:0 0 10px var(--gold);"></div>`});
+    const roseIcon = L.divIcon({className: 'custom-icon', html: `<div style="width:12px;height:12px;background:var(--rose);border-radius:50%;box-shadow:0 0 10px var(--rose);"></div>`});
+
+    if(pA?.lat) L.marker([pA.lat, pA.lon], {icon: myRole()==='A'?goldIcon:roseIcon}).addTo(map);
+    if(pB?.lat) L.marker([pB.lat, pB.lon], {icon: myRole()==='B'?goldIcon:roseIcon}).addTo(map);
+    if(pA?.lat && pB?.lat) L.polyline([[pA.lat, pA.lon], [pB.lat, pB.lon]], {color: 'rgba(255,255,255,0.2)', weight: 2, dashArray: '4, 6'}).addTo(map);
+  }
+
   const GIFT_SUBTABS = [
     {id:'boxes', label:'Gift Boxes'}, {id:'jar', label:'Surprise Jar'},
     {id:'scratch', label:'Scratch Cards'}, {id:'letters', label:'Open When…'}, {id:'capsule', label:'Time Capsule'},
@@ -3128,14 +3311,15 @@ try{
   }
 
   function settingsHtml(){
-    const rlist = state.routines.map(r=>`
+    const rlist = state.routinesShared.map(r=>`
       <div class="settings-row"><div>${r.icon} ${escapeHtml(r.label)} <span style="color:var(--cream-dim); font-size:12px;">· ${r.time}</span></div><button class="remove-x" data-remove="${r.id}">✕</button></div>`).join('');
     return `
       <div class="settings-block">
-        <h3>Your routine together</h3>
-        ${rlist || '<div class="section-sub">No routines yet.</div>'}
+        <h3>Your shared goals</h3>
+        <div class="section-sub">Things you both track together, like a shared commitment. Your own personal to-do items are added right on the Today tab.</div>
+        ${rlist || '<div class="section-sub">No shared goals yet.</div>'}
         <div class="add-routine">
-          <input type="text" id="new-r-label" placeholder="New routine name">
+          <input type="text" id="new-r-label" placeholder="New shared goal name">
           <div class="row2">
             <input type="time" id="new-r-time" value="09:00">
             <select id="new-r-icon">${ICON_CHOICES.map(i=>`<option>${i}</option>`).join('')}</select>
@@ -3179,11 +3363,12 @@ try{
       if(qotdBtn) qotdBtn.onclick = openQotdAnswerModal;
       document.querySelectorAll('.check.mine').forEach(el=>{
         el.onclick = async ()=>{
-          const id = el.getAttribute('data-id');
+          const id = el.getAttribute('data-log');
           const wasComplete = pct(myRole())===100;
           state.logToday[myRole()][id] = !state.logToday[myRole()][id];
           await sSet('routine-log:'+today(), JSON.stringify(state.logToday), true);
           await computeStreaks();
+          await loadRoutineHistory();
           if(!wasComplete && pct(myRole())===100){
             await pushFeedItem({id:uid(), type:'celebrate', role:myRole(), text:`${nameFor(myRole())} finished today's routine! 🎉`, ts:Date.now()});
             showToast('All done for today 🎉');
@@ -3201,6 +3386,37 @@ try{
           await pushFeedItem({id:uid(), type:'nudge', role:myRole(), text:label, ts:Date.now()});
           showToast('Nudge sent 👋');
           renderApp();
+        };
+      });
+      const addPersonalBtn = document.getElementById('add-personal-btn');
+      const addPersonalInput = document.getElementById('add-personal-input');
+      const addPersonalItem = async ()=>{
+        const label = (addPersonalInput.value||'').trim();
+        if(!label) return;
+        const list = state.routinesPersonal[myRole()] || (state.routinesPersonal[myRole()]=[]);
+        list.push({id:uid(), label});
+        await sSet('routines-personal', JSON.stringify(state.routinesPersonal), true);
+        await computeStreaks(); await loadRoutineHistory();
+        renderApp();
+      };
+      if(addPersonalBtn) addPersonalBtn.onclick = addPersonalItem;
+      if(addPersonalInput) addPersonalInput.onkeydown = (e)=>{ if(e.key==='Enter') addPersonalItem(); };
+      document.querySelectorAll('[data-del-personal]').forEach(el=>{
+        el.onclick = async ()=>{
+          const id = el.getAttribute('data-del-personal');
+          state.routinesPersonal[myRole()] = (state.routinesPersonal[myRole()]||[]).filter(r=>r.id!==id);
+          delete state.logToday[myRole()][id];
+          await sSet('routines-personal', JSON.stringify(state.routinesPersonal), true);
+          await sSet('routine-log:'+today(), JSON.stringify(state.logToday), true);
+          await computeStreaks(); await loadRoutineHistory();
+          renderApp();
+        };
+      });
+      document.querySelectorAll('[data-cheer-item]').forEach(el=>{
+        el.onclick = async ()=>{
+          const label = el.getAttribute('data-cheer-item');
+          await pushFeedItem({id:uid(), type:'cheer', role:myRole(), text:`Cheering you on for "${label}"! 👏`, ts:Date.now()});
+          showToast('Encouragement sent 👏');
         };
       });
     }
@@ -3260,4 +3476,264 @@ try{
         }
       } else if(sub==='tod'){
         const dt = document.getElementById('tod-draw-truth'); if(dt) dt.onclick = ()=> drawTod('truth');
-        const dd = document.getElementById('tod-draw-I seem to be encountering an error. Can I try something else for you?
+        const dd = document.getElementById('tod-draw-dare'); if(dd) dd.onclick = ()=> drawTod('dare');
+        const addCustomBtn = document.getElementById('tod-add-custom');
+        if(addCustomBtn) addCustomBtn.onclick = openAddCustomTodModal;
+        const cardEl = document.getElementById('tod-card-el');
+        if(cardEl && justDealt){ cardEl.classList.add('dealt'); justDealt = false; }
+        const complete = document.getElementById('tod-complete');
+        if(complete) complete.onclick = async ()=>{
+          const doneBy = (state.tod.doneBy||[]).concat(myRole());
+          const next = Object.assign({}, state.tod, {doneBy});
+          await sSet('tod:current', JSON.stringify(next), true);
+          state.tod = next; renderApp();
+        };
+        const newBtn = document.getElementById('tod-new');
+        if(newBtn) newBtn.onclick = async ()=>{ await sDelete('tod:current', true); state.tod=null; renderApp(); };
+      } else if(sub==='games'){
+        document.querySelectorAll('[data-ttt]').forEach(c=>{ c.onclick = ()=> tttMove(parseInt(c.getAttribute('data-ttt'),10)); });
+        const tr = document.querySelector('[data-ttt-reset]');
+        if(tr) tr.onclick = async ()=>{ const g={board:Array(9).fill(null),turn:'A',winner:null}; await sSet('game:ttt', JSON.stringify(g), true); state.games.ttt=g; renderApp(); };
+        const c4board = document.getElementById('c4-board');
+        if(c4board){
+          c4board.onclick = (e)=>{
+            const rect = c4board.getBoundingClientRect();
+            const col = Math.floor((e.clientX-rect.left) / (rect.width/7));
+            c4Move(Math.max(0,Math.min(6,col)));
+          };
+        }
+        const cr = document.querySelector('[data-c4-reset]');
+        if(cr) cr.onclick = async ()=>{ const g={board:Array(42).fill(null),turn:'A',winner:null}; await sSet('game:c4', JSON.stringify(g), true); state.games.c4=g; renderApp(); };
+      } else if(sub==='draw'){
+        initDrawCanvas();
+        document.querySelectorAll('.swatch').forEach(s=>{
+          s.onclick = ()=>{ drawColor = s.getAttribute('data-color'); if(drawCtx) drawCtx.strokeStyle = drawColor; document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('active')); s.classList.add('active'); };
+        });
+        document.getElementById('draw-clear').onclick = async ()=>{
+          const canvas = document.getElementById('draw-canvas'); const ctx = canvas.getContext('2d');
+          ctx.fillStyle='#F5F0E8'; ctx.fillRect(0,0,canvas.width,canvas.height);
+          drawDirty = true; await saveCanvas();
+        };
+        document.getElementById('draw-save').onclick = ()=>{
+          const canvas = document.getElementById('draw-canvas');
+          const a = document.createElement('a'); a.download = 'orbit-doodle.jpg'; a.href = canvas.toDataURL('image/jpeg',0.85); a.click();
+        };
+      } else if(sub==='quiz'){
+        const sa = document.getElementById('quiz-submit-answer');
+        if(sa) sa.onclick = ()=>{ const t = document.getElementById('quiz-my-answer').value.trim(); if(t) saveQuizField(myRole(), t); };
+        const sg = document.getElementById('quiz-submit-guess');
+        if(sg) sg.onclick = ()=>{ const t = document.getElementById('quiz-my-guess').value.trim(); if(t) saveQuizField('guess'+myRole(), t); };
+        const mr = document.getElementById('quiz-mark-right');
+        if(mr) mr.onclick = async ()=>{
+          const next = Object.assign({}, state.quizScores); next[myRole()] = (next[myRole()]||0)+1;
+          await sSet('quiz-scores', JSON.stringify(next), true); state.quizScores = next; renderApp();
+        };
+      } else if(sub==='bucket'){
+        const addBtn = document.getElementById('add-bucket-btn');
+        const addInput = document.getElementById('add-bucket-input');
+        if(addBtn) addBtn.onclick = ()=>{ addBucketItem(addInput.value); addInput.value=''; };
+        if(addInput) addInput.onkeydown = (e)=>{ if(e.key==='Enter'){ addBucketItem(addInput.value); addInput.value=''; } };
+        document.querySelectorAll('[data-log-bucket]').forEach(el=>{
+          el.onclick = ()=> toggleBucketItem(el.getAttribute('data-log-bucket'));
+        });
+        document.querySelectorAll('[data-del-bucket]').forEach(el=>{
+          el.onclick = ()=> deleteBucketItem(el.getAttribute('data-del-bucket'));
+        });
+      }
+    }
+    if(state.tab==='gifts'){
+      document.querySelectorAll('[data-gift]').forEach(b=>{
+        b.onclick = async ()=>{ state.subtab.gifts = b.getAttribute('data-gift'); renderApp(); await loadFeatureData(); renderApp(); };
+      });
+      const sub = state.subtab.gifts;
+      if(sub==='boxes'){
+        const nb = document.getElementById('gift-new'); if(nb) nb.onclick = openGiftComposer;
+        document.querySelectorAll('[data-unlock-pin]').forEach(btn=>{
+          btn.onclick = async ()=>{
+            const id = btn.getAttribute('data-unlock-pin');
+            const g = state.giftboxes.find(x=>x.id===id);
+            const entered = document.getElementById('pin-'+id).value.trim();
+            if(entered !== g.pin){ showToast('Wrong PIN'); return; }
+            g.opened = true;
+            await sSet('giftbox:'+id, JSON.stringify(g), true);
+            renderApp();
+          };
+        });
+      } else if(sub==='jar'){
+        document.getElementById('jar-add').onclick = async ()=>{
+          const text = document.getElementById('jar-note-text').value.trim();
+          if(!text) return;
+          const n = {id:uid(), from:myRole(), text, ts:Date.now()};
+          await sSet('jarnote:'+n.id, JSON.stringify(n), true);
+          const idxRaw = await sGet('jar-index', true);
+          const ids = getJSON(idxRaw, []); ids.unshift(n.id);
+          await sSet('jar-index', JSON.stringify(ids), true);
+          state.jarNotes.unshift(n);
+          showToast('Dropped in jar 🫙');
+          renderApp();
+        };
+        document.getElementById('jar-pull').onclick = pullJarNote;
+      } else if(sub==='scratch'){
+        const sb = document.getElementById('scratch-send');
+        if(sb) sb.onclick = async ()=>{
+          const text = document.getElementById('scratch-text').value.trim();
+          if(!text) return;
+          const payload = {message:text, ts:Date.now(), scratchedBy:null};
+          await sSet('scratch:'+today()+':'+myRole(), JSON.stringify(payload), true);
+          state.scratchToday[myRole()] = payload;
+          showToast('Scratch card sent 🎟️');
+          renderApp();
+        };
+        initScratchCanvas();
+      } else if(sub==='letters'){
+        const nb = document.getElementById('letter-new'); if(nb) nb.onclick = openLetterComposer;
+        document.querySelectorAll('[data-letter]').forEach(c=>{ c.onclick = ()=> openLetter(c.getAttribute('data-letter')); });
+      } else if(sub==='capsule'){
+        const nb = document.getElementById('capsule-new'); if(nb) nb.onclick = openCapsuleRecorder;
+      }
+    }
+    if(state.tab==='settings'){
+      document.querySelectorAll('[data-remove]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          const id = btn.getAttribute('data-remove');
+          state.routinesShared = state.routinesShared.filter(r=>r.id!==id);
+          await sSet('routines-shared', JSON.stringify(state.routinesShared), true);
+          await computeStreaks(); await loadRoutineHistory();
+          state.tab='settings'; renderApp();
+        };
+      });
+      document.getElementById('new-r-add').onclick = async ()=>{
+        const label = document.getElementById('new-r-label').value.trim();
+        const time = document.getElementById('new-r-time').value || '09:00';
+        const icon = document.getElementById('new-r-icon').value || '✨';
+        if(!label) return;
+        state.routinesShared.push({id:uid(), label, time, icon});
+        await sSet('routines-shared', JSON.stringify(state.routinesShared), true);
+        await computeStreaks(); await loadRoutineHistory();
+        state.tab='settings'; renderApp();
+      };
+      document.getElementById('notif-switch').onclick = async ()=>{
+        if(!state.notifOn && 'Notification' in window){
+          const perm = await Notification.requestPermission();
+          state.notifOn = perm === 'granted';
+        } else { state.notifOn = !state.notifOn; }
+        await sSet('notif-on', JSON.stringify(state.notifOn), false);
+        state.tab='settings'; renderApp();
+      };
+      document.getElementById('logout-app').onclick = async ()=>{
+        await fbSignOut(auth);
+      };
+      document.getElementById('my-city-find').onclick = async ()=>{
+        const q = document.getElementById('my-city-search').value.trim();
+        const resultEl = document.getElementById('city-result');
+        if(!q) return;
+        resultEl.textContent = 'Searching…';
+        try{
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1`);
+          const data = await res.json();
+          const r = data && data.results && data.results[0];
+          if(!r){ resultEl.textContent = 'No match found.'; return; }
+          await writeLive({city: r.name, country: r.country, lat: r.latitude, lon: r.longitude, tz: r.timezone});
+          state.weather[myRole()] = null;
+          resultEl.textContent = `Set to ${r.name}, ${r.country}`;
+          renderApp();
+        }catch(e){ resultEl.textContent = 'Could not reach location service.'; }
+      };
+      document.getElementById('reset-couple').onclick = async ()=>{
+        if(!confirm('Reset all shared data for both of you?')) return;
+        try{
+          const listed = await storageBackend.list(undefined, true);
+          const keys = (listed && listed.keys) || [];
+          for(const k of keys) await sDelete(k, true);
+        }catch(e){}
+        location.reload();
+      };
+    }
+  }
+
+  function handlePhotoPick(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    // state.pendingPhoto holds the ORIGINAL file untouched — this is what
+    // actually gets uploaded (full resolution, original quality, no recompression).
+    state.pendingPhoto = file;
+    state.pendingPhotoExt = (file.name.split('.').pop()||'jpg').toLowerCase();
+    // state.pendingPhotoPreview is only ever used for the small on-screen
+    // thumbnail — it's never uploaded, so it can be a cheap low-res render.
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      state.pendingPhotoPreview = reader.result;
+      renderThumb();
+    };
+    reader.readAsDataURL(file);
+  }
+  function renderThumb(){
+    const holder = document.getElementById('thumb-holder');
+    if(!holder) return;
+    holder.innerHTML = state.pendingPhoto ? `<div class="thumb-preview"><img src="${state.pendingPhotoPreview}"><button class="thumb-remove" id="thumb-remove">✕</button></div>` : '';
+    if(state.pendingPhoto) document.getElementById('thumb-remove').onclick = ()=>{ state.pendingPhoto=null; state.pendingPhotoPreview=null; renderThumb(); };
+  }
+  async function pushFeedItem(item){
+    await sSet('feed:'+item.id, JSON.stringify(item), true);
+    const idxRaw = await sGet('feed-index', true);
+    let ids = getJSON(idxRaw, []);
+    ids.unshift(item.id);
+    // Feed items now store a Cloudinary URL instead of raw base64, so they're
+    // tiny in the database — keep a much longer history than before.
+    if(ids.length>500){
+      const dropped = ids.slice(500);
+      ids = ids.slice(0,500);
+      for(const id of dropped) await sDelete('feed:'+id, true);
+    }
+    await sSet('feed-index', JSON.stringify(ids), true);
+    state.feed.unshift(item);
+    state.knownFeedIds.add(item.id);
+  }
+  async function sendMoment(){
+    const textEl = document.getElementById('moment-text');
+    const sendBtn = document.getElementById('moment-send');
+    const text = textEl.value.trim();
+    if(!text && !state.pendingPhoto) return;
+    let photoUrl = null;
+    if(state.pendingPhoto){
+      if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Uploading…'; }
+      photoUrl = await uploadMediaToStorage(state.pendingPhoto, 'moments', state.pendingPhotoExt||'jpg');
+    }
+    await pushFeedItem({id:uid(), type:'moment', role:myRole(), text, photo: photoUrl, ts:Date.now()});
+    textEl.value=''; state.pendingPhoto=null; state.pendingPhotoPreview=null;
+    state.tab='moments'; renderApp();
+    showToast('Posted 💫 — saved for good');
+  }
+  async function sendCheer(text){
+    await pushFeedItem({id:uid(), type:'cheer', role:myRole(), text, ts:Date.now()});
+    state.tab='moments'; renderApp();
+    showToast('Cheer sent');
+  }
+  function showToast(msg){
+    const t = document.createElement('div');
+    t.className='toast'; t.textContent=msg;
+    document.body.appendChild(t);
+    setTimeout(()=>{ t.remove(); }, 2600);
+  }
+
+  async function checkReminders(){
+    if(!state.notifOn || !('Notification' in window) || Notification.permission!=='granted') return;
+    const now = new Date();
+    const cur = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const notifiedRaw = await sGet('notified:'+today(), false);
+    const notified = getJSON(notifiedRaw, []);
+    let changed = false;
+    for(const r of allRoutinesFor(myRole())){
+      if(r.time===cur && !notified.includes(r.id)){
+        try{ new Notification('Orbit', {body:`${r.icon||'✨'} ${r.label} — time to go`}); }catch(e){}
+        notified.push(r.id); changed = true;
+      }
+    }
+    if(changed) await sSet('notified:'+today(), JSON.stringify(notified), false);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
